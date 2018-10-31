@@ -1,0 +1,216 @@
+# be very careful with the ordering of the cproj.mif and defrule.mif
+proj_name       = wlib
+
+!ifndef wlib_autodepends
+wlib_autodepends = .AUTODEPEND
+!endif
+
+# Base DLL name needs to be 8 chars or less on OS/2, argh! Additionally,
+# internal module name may be required to match file name on some platforms.
+!ifdef bootstrap
+exename     = bwlib
+dllname     = bwlibd
+!else
+exename     = wlib
+dllname     = wlibd
+!endif
+
+!ifeq release 0
+wlib_trmem = 1
+!endif
+
+!include cproj.mif
+!include defrule.mif
+!include dllrule.mif
+!include deftarg.mif
+!include osi.mif
+!include dllbase.mif
+
+!ifdef bootstrap
+!include $(orl_dir)/orlobjs.mif
+!else
+!include wres.mif
+!include $(orl_dir)/client.mif
+!endif
+
+!include trmem.mif
+
+##########
+# objects
+
+common_objs = &
+    $(_subdir_)wlib.obj &
+    $(_subdir_)libio.obj &
+    $(_subdir_)symtable.obj &
+    $(_subdir_)omfproc.obj &
+    $(_subdir_)writelib.obj &
+    $(_subdir_)convert.obj &
+    $(_subdir_)wlibutil.obj &
+    $(_subdir_)libwalk.obj &
+    $(_subdir_)symlist.obj &
+    $(_subdir_)proclib.obj &
+    $(_subdir_)cmdline.obj &
+    $(_subdir_)error.obj &
+    $(_subdir_)implib.obj &
+    $(_subdir_)elfobjs.obj &
+    $(_subdir_)orlrtns.obj &
+    $(_subdir_)memfuncs.obj &
+    $(_subdir_)demangle.obj &
+    $(_subdir_)omfhash.obj &
+    $(_subdir_)omfutil.obj &
+    $(_subdir_)coffwrt.obj &
+    $(_subdir_)inlib.obj &
+    $(_subdir_)idemsgpr.obj &
+    $(_subdir_)ideentry.obj &
+    $(trmem_objs)
+
+!ifdef bootstrap
+wlib_orl_objs = $(orl_objs)
+!endif
+
+dll_objs_nt  = $(dll_subdir)/ntdll.obj
+dll_objs_os2 = $(dll_subdir)/os2dll.obj
+
+wlib_template = $(common_objs) $(wlib_orl_objs)
+
+drv_objs = maindrv.obj idedrv.obj idemsgfm.obj
+_subdir_ = $(dll_subdir)/
+dll_objs = $+$(wlib_template)$- $(dll_objs_$(host_os))
+_subdir_ =
+exe_objs = $+$(wlib_template)$- $(drv_objs)
+
+#########
+# cflags
+
+extra_cpp_flags = -D__WLIB__
+!ifdef bootstrap
+extra_cpp_flags += -DINCL_MSGTEXT
+!endif
+!ifndef wlib_dll
+extra_cpp_flags += -DIDE_PGM
+!endif
+
+extra_c_flags_trmem    = $(trmem_cflags)
+extra_c_flags_memfuncs = $(trmem_cover_cflags)
+extra_c_flags_idedrv   = -DSTATIC_LINKAGE
+extra_c_flags_maindrv  = -DDLL_NAME=$(dllname)
+
+###################
+# linker flags .EXE
+
+extra_l_flags_qnx = op offset=64k, stack=60k
+
+###################
+# linker flags .DLL
+
+extra_l_flags_dll     = option implib $($(proj_name)_dllbase_$(host_os)_$(host_cpu))
+extra_l_flags_dll_nt  = initinstance terminstance op modname='$(dllname).dll'
+extra_l_flags_dll_os2 = INITINSTANCE TERMINSTANCE op modname='$(dllname)'
+
+###################
+# rc flags
+
+# systems where version resources must be added to .DLL
+version_res_dll_nt_386 = version.res
+version_res_dll_nt_x64 = version.res
+
+# systems where version resources must be added to .EXE
+!ifndef bootstrap
+version_res_exe_nt_386 = exever.res
+version_res_exe_nt_x64 = exever.res
+!endif
+
+verrc_exe = $(exename)
+verrc_dll = $(dllname)
+!include verrc.mif
+
+inc_dirs =  -I. -I.. -I"../h" -I"$(orl_dir)/h" -I"$(lib_misc_dir)/h"
+.c: ../c;$(lib_misc_dir)/c;$(watcom_dir)/c;$(trmem_dir)
+.h: ../h;$(watcom_dir)/h
+
+!ifdef bootstrap
+inc_dirs += -I"$(orl_dir)/elf/h" -I"$(orl_dir)/coff/h" -I"$(orl_dir)/omf/h"
+.c: $(orl_dir)/c;$(orl_dir)/elf/c;$(orl_dir)/coff/c;$(orl_dir)/omf/c;
+.h: $(orl_dir)/h;$(orl_dir)/elf/h;$(orl_dir)/coff/h;$(orl_dir)/omf/h;
+!endif
+
+!ifndef bootstrap
+xlibs = $(wres_lib) $(orl_lib)
+!endif
+
+!ifdef bootstrap
+depends_msg = msg.gh incltext.gh
+!else
+depends_msg = msg.gh wresui.res
+!endif
+depends_drv =
+depends_exe = $(depends_msg)
+depends_dll = $(depends_msg)
+
+!ifdef wlib_dll
+
+$(exename).exe: $(depends_drv) $(dllname).dll $(drv_objs) $(version_res_exe_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    @%make echo_link
+    $(cl) $(clflags_gen) $(drv_objs) $(dllname).lib $(ldflags_gen)
+!else 
+    @%write drv.lnk $(lflags)
+    @for %i in ($(drv_objs)) do @%append drv.lnk file %i
+    @%append drv.lnk lib $(dllname).lib
+    @%make echo_link
+    $(linker) name $@ @drv.lnk
+!endif
+    @%make bind_res_version_exe
+
+!else
+
+$(exename).exe: $(depends_exe) $(xlibs) $(exe_objs) $(version_res_exe_$(host_os)_$(host_cpu)) $(osildr) $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    @%make echo_link
+    $(cl) $(clflags) $(exe_objs) $(xlibs) $(ldflags)
+!else 
+    @%write exe.lnk $(lflags)
+    @for %i in ($(exe_objs)) do @%append exe.lnk file %i
+    @for %i in ($(xlibs)) do @%append exe.lnk lib %i
+    @%make echo_link
+    $(linker) name $(lname) @exe.lnk
+    @%make bind_osildr
+!endif
+    @%make bind_res_version_exe
+!ifndef bootstrap
+    @%make bind_res_wresui
+!endif
+
+!endif
+
+$(dllname).dll: $(depends_dll) $(xlibs) $(dll_objs) $(version_res_dll_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    @%make echo_link
+    $(cl) $(clflags_dll) $(dll_objs) $(xlibs) $(ldflags_dll)
+!else 
+    @%write dll.lnk $(lflags_dll)
+    @for %i in ($(dll_objs)) do @%append dll.lnk file %i
+    @for %i in ($(xlibs)) do @%append dll.lnk lib %i
+    @%make echo_link
+    $(linker) name $@ @dll.lnk
+!endif
+    @%make bind_res_version_dll
+!ifndef bootstrap
+    @%make bind_res_wresui
+!endif
+
+msg.gh : wlibmsg.gh
+    @%make echo_awk
+    $(awk) -f $(build_dir)/msgtoh.awk -v OUTFILE=$^. $[@
+
+incltext.gh : ../h/incltext.h ../wlib.msg
+    @%make echo_cpp
+    $(cpp) $(rc_aui_flags) -I.. -o$^@ $[@
+
+wlibmsg.gh : ../wlib.msg
+    @%make echo_cpp
+    $(cpp) $(rc_aui_flags) -o$^@ $[@
+
+wresui.res : ../wlib.rc ../wlib.msg msg.gh
+    @%make echo_rc
+    $(rc_aui) $[@ -fo=$@

@@ -1,0 +1,65 @@
+proj_name = emu386
+
+emu386_autodepends = .AUTODEPEND
+emu386_distrib_lib = 1
+
+additional_cleanup = usage.u
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+.c : ../c;../../c
+.asm : ../asm
+
+extra_a_flags = -fpc
+extra_a_flags_dos = -ms -D_OS=_PLDT -DSEGMENTED
+extra_a_flags_qnx = -ms -D_OS=_QNX -DSEGMENTED
+extra_a_flags_win = -mf -D_OS=_PLDT -D__WIN387__
+extra_a_flags_386inite = -I"$(comp_cfg_dir)/h"
+extra_a_flags_386stub = -ms -I"$(comp_cfg_dir)/h"
+extra_a_flags_emu387 = -I"../inc" -I"../../inc" -I"$(mathlib_dir)/h"
+
+extra_cpp_flags_qnx = -DQNX
+
+extra_c_flags = -s -fpc
+extra_c_flags_dos = -zl -zls
+extra_c_flags_qnx = -oais-w3 -I"$(new_qnx_h)"
+extra_c_flags_qnxemu87 = -i"$(clib_dir)/startup/h" -I"$(clib_dir)/h" -I"$(lib_misc_dir)/h" -i"$(comp_cfg_dir)/h"
+extra_c_flags_fpeqnx = -I"$(clib_dir)/h"
+
+extra_link_res_qnx = usage.u
+
+!ifeq host_os dos
+
+objs = emu387.obj 386inite.obj
+
+emu387.lib: $(objs) $(__MAKEFILES__)
+    @%make echo_lib
+    $(librarian) $(libflags) $(objs)
+
+!else ifeq host_os qnx
+
+objs = qnxemu87.obj emu387.obj fpeqnx.obj
+
+emu387.exe: $(extra_link_res_qnx) $(objs) $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) opt priv=0,map,long,quiet,res=$(extra_link_res_qnx) file {$(objs)}
+
+usage.u : ../../usage.sp
+    @%make echo_wsplice
+    $(wsplice) -u $< $@
+
+!else ifeq host_os win
+
+!else
+
+objs = 386stub.obj
+
+emu387.lib noemu387.lib: $(objs) $(__MAKEFILES__)
+    @%make echo_lib
+    $(librarian) $(libflags) $(objs)
+
+!endif
+
+emu387.obj: emu387.asm

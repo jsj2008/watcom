@@ -1,0 +1,23 @@
+!ifdef %OWUSE_FILENAME_VERSION
+name = watcom$(bld_ver)
+!else
+name = watcom
+!endif
+
+imp_objs = &
+        wataddr.obj &
+        watdmnd.obj &
+        watgbl.obj &
+        watlcl.obj &
+        watldsym.obj &
+        watlnum.obj &
+        watloc.obj &
+        watmisc.obj &
+        watmod.obj &
+        wattype.obj &
+        demangle.obj
+
+extra_incs = -I"$(lib_misc_dir)/h"
+extra_srcs = $(lib_misc_dir)/c
+
+!include ../../master.mif

@@ -1,0 +1,20 @@
+#include "wresdefn.h"
+#include "wdmsg.h"
+#include "wreslang.h"
+#include "banner.h"
+#include "wv.rc"
+
+STRINGTABLE
+BEGIN
+    #define pick(c,e,j) (c + RLE_ENGLISH * MSG_LANG_SPACING), [ e ]
+
+    #include "usage.gh"
+
+    #undef pick
+
+    #define pick(c,e,j) (c + RLE_JAPANESE * MSG_LANG_SPACING), [ j ]
+
+    #include "usagej.gh"
+
+    #undef pick
+END

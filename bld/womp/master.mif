@@ -1,0 +1,83 @@
+proj_name = womp
+
+!ifndef womp_autodepends
+womp_autodepends = .autodepend
+!endif
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+!include wres.mif
+
+inc_dirs = -I. -I"$(womp_dir)/h"
+
+.c: ../c;$(trmem_dir)
+
+objs =              &
+    array.obj       &
+    can2ms0.obj     &
+    can2ms1.obj     &
+    can2ms2.obj     &
+    can2td0.obj     &
+    can2td1.obj     &
+    can2td2.obj     &
+    can2txt.obj     &
+    canaddr.obj     &
+    canmisc.obj     &
+    cansymb.obj     &
+    cantype.obj     &
+    carve.obj       &
+    cmdline.obj     &
+    deflib.obj      &
+    fixup.obj       &
+    genmscmt.obj    &
+    genmsomf.obj    &
+    genphar.obj     &
+    genutil.obj     &
+    lifix.obj       &
+    main.obj        &
+    memutil.obj     &
+    namemgr.obj     &
+    objio.obj       &
+    objprs.obj      &
+    reglist.obj     &
+    objrec.obj      &
+    pubdef.obj      &
+    queue.obj       &
+    segment.obj     &
+    wat2can0.obj    &
+    wat2can1.obj    &
+    wpmsg.obj
+
+!ifeq release 0
+!ifndef wmake_trmem
+wmake_trmem = 1
+!endif
+!endif
+
+!ifeq wmake_trmem 1
+objs += trmem.obj
+extra_c_flags_memory += -dTRACK -of+
+!endif
+
+$(proj_name).exe : wmpmsg.gh wresui.res $(objs) $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) file { $(objs) } lib $(wres_lib)
+    @%make bind_res_wresui
+
+wmpmsg.gh : $(womp_dir)/womp.msg
+    @%make echo_awk
+    $(awk) -v base=MSG_RC_BASE -f $(build_dir)/makemsg.awk -v OUTFILE=$^. $[@
+
+wresui.res :  usage.grc ../h/$(proj_name).rc
+    @%make echo_rc
+    $(rc_aui) $(extra_rc_flags) -I"$(wrc_dir)/h" $]@ -fo=$^@
+
+usage.grc : ../usage.sp
+    @%make echo_wsplice
+    $(wsplice) -kIS_RC -kENGLISH -t8 -f "%+(MSG_USE_BASE+%$#-1), \"%s\""$[@ $@
+
+usagej.grc : ../usage.sp
+    @%make echo_wsplice
+    $(wsplice) -kIS_RC -kJAPANESE -t8 -f "%+(MSG_USE_BASE+%$#-1), \"%s\""$[@ $@

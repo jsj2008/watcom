@@ -1,0 +1,153 @@
+proj_name=hdr
+
+!include cproj.mif
+!include ../hfiles.mif
+
+dos_options   = -kDOS -kUNICODE
+linux_options = -kLINUX -u
+qnx_options   = -kQNX -t8 -u
+
+wsplice_opts = -i.. $($(system)_options) ../common.sp $[@ $^@
+wsplice_opts_p = -i.. $($(system)_options) -kCNAME $(options_$^&) ../common.sp $[@ $^@
+wsplice_opts_c = -i.. $($(system)_options) $(options_h_$^&) ../common.sp $[@ $^@
+
+wsplice_opts_i386 = -i.. -kARCHI386 $($(system)_options) ../common.sp $[@ $^@
+wsplice_opts_mips = -i.. -kARCHMIPS $($(system)_options) ../common.sp $[@ $^@
+
+# order of directories is important for DOS
+# multi level tree must be created from top to bottom
+# DOS can create only simple sub-directory in existing directory
+# you must create parent before child directory
+dos_dirs   = sys
+linux_dirs = sys netinet arpa arch arch/i386 arch/i386/sys arch/mips arch/mips/sys
+qnx_dirs   = sys
+
+dos_path   = ../watcom
+linux_path = ../watcom
+qnx_path   = ../quantum;../watcom
+
+.EXTENSIONS
+.EXTENSIONS : . .h .hpp .cnv .mh .mhp
+
+all : $($(system)_dirs) $($(system)_files) .symbolic
+    @%null
+
+.mh:  $($(system)_path)
+.mhp: $($(system)_path)
+
+.mhp.hpp:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+.mh.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts_c)
+
+{dos}.mh.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+{linux}.mh.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+{sys}.mh{sys}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+{dos/sys}.mh{sys}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+{linux/sys}.mh{sys}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+{linux/arpa}.mh{arpa}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+{linux/netinet}.mh{netinet}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+{linux/arch/i386}.mh{arch/i386}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts_i386)
+
+{linux/arch/i386/sys}.mh{arch/i386/sys}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts_i386)
+
+{linux/arch/mips}.mh{arch/mips}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts_mips)
+
+{linux/arch/mips/sys}.mh{arch/mips/sys}.h:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts_mips)
+
+.mh.cnv:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts)
+
+#
+# Handle C++ and cname style headers (files without extension)
+#
+.mh.:
+    @%make echo_wsplice
+    $(wsplice) $(wsplice_opts_p)
+
+#
+# Special case for cname style headers
+#
+options_complex  = -kCPPONLY
+options_limits   = -kCPPONLY
+options_locale   = -kCPPONLY
+options_memory   = -kCPPONLY
+options_string   = -kCPPONLY
+
+#
+# Special case for included C++ cname style headers
+#   for optimize C++ declaration out of C part
+#
+options_h__algmut  = -kCNAME
+options_h__algnmod = -kCNAME
+options_h__algsort = -kCNAME
+options_h__hash    = -kCNAME
+options_h__meta    = -kCNAME
+options_h__rbtree  = -kCNAME
+options_h__strdef  = -kCNAME
+options_h_ctype    = -kCONLY
+options_h_except   = -kCNAME
+options_h_generic  = -kCNAME
+options_h_inttypes = -kCONLY
+options_h_locale   = -kCONLY
+options_h_math     = -kCONLY
+options_h_signal   = -kCONLY
+options_h_stdarg   = -kCONLY
+options_h_stdbool  = -kCONLY
+options_h_stddef   = -kCONLY
+options_h_stdio    = -kCONLY
+options_h_stdlib   = -kCONLY
+options_h_string   = -kCONLY
+options_h_time     = -kCONLY
+options_h_wcdefs   = -kCPPONLY
+options_h_wctype   = -kCONLY
+options_h_wchar    = -kCONLY
+
+!ifneq $(system)_dirs
+$($(system)_dirs):
+!ifdef __UNIX__
+    @if not exist $@ mkdir -p $@
+!else
+    @if not exist $@ mkdir $@
+!endif
+!endif
+
+!include ../deps.mif
+
+clean: .SYMBOLIC
+    rm -f *.h *.hpp common.cnv
+    rm -f $(noext)
+    rm -rf $($(system)_dirs)

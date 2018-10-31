@@ -1,0 +1,54 @@
+proj_name = cwc
+
+cwc_autodepends = .AUTODEPEND
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+.c : ../../c
+.asm : ../../asm
+
+inc_dirs = -I.
+
+objs = cwc.obj
+
+!ifndef bootstrap
+all : $(proj_name).exe .symbolic
+!endif
+
+$(proj_name).exe : copystub.gh decstub.gh $(objs) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) $(ldflags)
+!else
+    $(linker) name $@ $(lflags) file {$(objs)}
+!endif
+
+copystub.tmp : copystub.asm
+    @%make echo_aslink
+    $(noecho)*bwasm -zq -fo=$^&.obj $[@
+    $(noecho)*bwlink format dos com op quiet, nodefault file $^&.obj name $@ disable 1023,1080
+
+copystub.gh : ./mkcode.exe copystub.tmp
+    @%make echo_execute
+    $(noecho)$[@ $]@ $@
+
+decstub.tmp : decstub.asm
+    @%make echo_aslink
+    $(noecho)*bwasm -zq -fo=$^&.obj $[@
+    $(noecho)*bwlink format dos com op quiet, nodefault file $^&.obj name $@ disable 1023,1080
+
+decstub.gh : ./mkcode.exe decstub.tmp
+    @%make echo_execute
+    $(noecho)$[@ $]@ $@
+
+./mkcode.exe: mkcode.c
+    @%make echo_bldcl
+    $(bld_cl) $[@ $(bld_clflags) $(bld_ldflags)
+
+echo_aslink : .PROCEDURE .EXPLICIT
+!ifeq verbose 0
+    @echo bld_as $^&.obj
+    @echo bld_link $^&.tmp
+!endif

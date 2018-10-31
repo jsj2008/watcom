@@ -1,0 +1,58 @@
+#include <windows.h>
+#include "const.h"
+#include "intdlg.h"
+#include "stat.h"
+#include "stackt.h"
+#include "memwnd.h"
+#include "drwatlog.h"
+#include "dmptask.h"
+#include "taskctl.h"
+#include "about.h"
+#include "rcstr.gh"
+#include "uistr.gh"
+#include "dbgopt.h"
+#include "segmap.h"
+#include "dipload.h"
+#include "notelog.h"
+#include "banner.h"
+
+#define FIRST_COPYRIGHT_YEAR 1993
+
+"APPLICON" ICON "drwatcom.ico"
+"ALERTICON" ICON "err.ico"
+
+#ifdef JAPANESE
+ #define sp( s1, s2 ) s2
+#else
+ #define sp( s1, s2 ) s1
+#endif
+#include "menu.rc"
+#undef sp
+
+STRINGTABLE
+BEGIN
+  #ifdef JAPANESE
+    #define pick(c,e,j) c, [ j ]
+  #else
+    #define pick(c,e,j) c, [ e ]
+  #endif
+
+    #include "rcstrmsg.gh"
+    #include "uistrmsg.gh"
+
+    #undef pick
+END
+
+#include "about.dlg"
+#include "intdlg.dlg"
+#include "stat.dlg"
+#include "stackt.dlg"
+#include "memwnd.rc"
+#include "drwatlog.dlg"
+//#include "dmptask.dlg"
+#include "taskctl.dlg"
+#include "mark.rc"
+#include "dbgopt.dlg"
+#include "segmap.dlg"
+#include "dipload.dlg"
+#include "notelog.dlg"

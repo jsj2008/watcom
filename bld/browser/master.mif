@@ -1,0 +1,159 @@
+proj_name = browse
+name = wbrw
+
+!ifndef browse_autodepends
+browse_autodepends = .AUTODEPEND
+!endif
+
+doc_path_nt  = $(docs_dir)/nt
+doc_path_os2 = $(docs_dir)/os2
+doc_path_win = $(docs_dir)/win
+
+wbrw_h_dos = $(doc_path_os2)/wbrw.h
+wbrw_h_os2 = $(doc_path_os2)/wbrw.h
+wbrw_h_win = $(doc_path_win)/wbrw.h
+wbrw_h_nt  = $(doc_path_nt)/wbrw.h
+
+additional_cleanup = $(wbrw_h_os2) $(wbrw_h_win) $(wbrw_h_nt)
+
+.extensions: .gpp .res .rc
+
+sys_windowed = 1
+
+!ifdef __UNIX__
+to_os_path=\=/
+!else
+to_os_path=/=\
+!endif
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+!include $(dwarfr_dir)/client.mif
+!include $(wclass_dir)/client.mif
+!include $(gui_dir)/client.mif
+!include $(ui_dir)/client.mif
+!include tools.mif
+
+!include ../template.mif
+
+.c: ../cpp;../merge/c;$(posix_dir)/misc;$(lib_misc_dir)/c
+.cpp: ../cpp;../brg/cpp
+.gpp: ../gen
+.rc: ../res
+
+ext = obj
+objs = $+$(template)$-
+
+!ifeq release 0
+objs += debuglog.obj
+!endif
+!ifeq browse_trmem 1
+objs += dmem.obj trmem.obj
+!else
+objs += mem.obj
+!endif
+
+!ifdef gen_browse_file
+ext = mbr
+mbr_files = $+$(template)$-
+!endif
+
+doc_inc_dirs_dos    = -I"$(doc_path_os2)"
+doc_inc_dirs_nt     = -I"$(doc_path_nt)"
+doc_inc_dirs_os2    = -I"$(doc_path_os2)"
+doc_inc_dirs_win    = -I"$(doc_path_win)"
+
+inc_dirs = -I"../h" -I"../brg/h" -I"../gen" $(wclass_inc_dirs) $(doc_inc_dirs_$(host_os)) $(dwarfr_inc_dirs) -I"$(posix_dir)/h" -I"$(editdll_dir)"
+
+extra_cpp_flags = -DSTANDALONE_RX=1 -DNOPERSIST=1
+!ifeq release 0
+extra_cpp_flags += -DDEBUG=1 -DDEBUG_ASSERT=1 -DDEBUGTREE=1
+!endif
+!ifeq use_virtmem 1
+extra_cpp_flags += -DUSE_VIRTMEM
+!endif
+
+extra_c_flags_i86 = -zc -zm
+!ifdef DBG
+extra_c_flags_i86 += -zw
+!else
+extra_c_flags_i86 += -zW
+!endif
+
+extra_cxx_flags = -ew -xs
+!ifdef gen_browse_file
+extra_cxx_flags += -db
+!endif
+
+extra_c_flags_trmem = -I"$(trmem_dir)"
+extra_c_flags_regexp = -I"$(posix_dir)/h" -DALLOC=WBRAlloc -fi="../h/mem.h"
+extra_c_flags_demangle = -I"$(lib_misc_dir)/h"
+!ifneq host_os axp
+mem_flag = -of+
+!endif
+!ifeq browse_trmem 1
+extra_c_flags_dmem = $(mem_flag) -I"$(trmem_dir)"
+!endif
+
+#linker
+libs_dos = $(ui_lib)
+
+libs     = $(gui_lib) $(libs_$(host_os)) $(dwarfr_lib) $(wclass_lib)
+
+lflags_win_i86  = sys windows font mem op stack=16k
+lflags_dos_386  = sys pharlap
+
+extra_l_flags   = op eliminate
+!ifndef quick_link
+extra_l_flags   += op show,art,static
+!endif
+
+extra_l_flags_dos = op stub=$(pharlap)stub386.exe
+extra_l_flags_win = op packdata=48k seg CLASS CODE FIXED, CLASS FAR_DATA FIXED, CLASS DATA FIXED
+extra_l_flags_nt_axp = op undefsok
+extra_l_flags_nt = $(extra_l_flags_nt_$(host_cpu))
+extra_l_flags_os2 =
+
+# systems where version resource must be added to .EXE
+version_res_exe_nt_386 = exever.res
+version_res_exe_nt_x64 = exever.res
+
+verrc_exe = $(name)
+!include verrc.mif
+
+all: $(wbrw_h_$(host_os)) $(name).exe .SYMBOLIC
+
+$(name).exe : $(objs) $(libs) $(name).res $(version_res_exe_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) file {$(objs)} lib {$(libs)}
+    @%make bind_res_add_version_exe
+!ifdef gen_browse_file
+    $(noecho)%create browser.wbr
+    @for %i in ($(mbr_files)) do @%append browser.wbr file %i
+!endif
+
+.gpp.obj: .AUTODEPEND
+    @%make echo_cxx
+    $(cxx) $(cflags) $(extra_cxx_flags) $(extra_c_flags_$[&) $(inc_path) $[@
+
+dmem.obj : mem.cpp
+
+!ifdef wbrw_h_$(host_os)
+$(wbrw_h_$(host_os)): .ALWAYS
+curr_dir=$+$(%__CWD__)$-
+    @cd $(doc_path_$(host_os):$(to_os_path))
+    @wmake -h hbook=wbrw header=1
+    @cd $(curr_dir)
+!endif
+
+!ifeq host_os os2
+$(name).res : wbrwpm.rc
+    @%make echo_rc
+    $(rc) $(rc_flags) $(inc_dirs_sys) $< -fo=$@
+!else
+$(name).res : wbrw.rc
+    @%make echo_rc
+    $(rc) $(rc_flags) $(inc_dirs_sys) $< -fo=$@
+!endif

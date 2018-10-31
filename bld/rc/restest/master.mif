@@ -1,0 +1,51 @@
+proj_name = restest
+
+restest_autodepends = .AUTODEPEND
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+.suffixes : .rc .res
+
+inc_dirs = -I..
+
+.c: ..
+.rc: ..
+
+ntobjs = msgtbl.nbj
+                          
+objs =              &
+        restest.obj &
+        resproc.obj &
+        verinfo.obj &
+        string.obj  &
+        menu.obj    &
+        dialog.obj  &
+        data.obj    &
+        cursor.obj  &
+        icon.obj    &
+        accel.obj   &
+        bitmap.obj
+
+!ifeq host_os nt
+objs += msgtbl.obj
+win_libs = version.lib
+!else
+win_libs = ver.lib
+!endif
+
+extra_l_flags = opt map
+
+$(proj_name).exe : $(objs) $(proj_name).res $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) $(win_libs) $(ldflags)
+!else
+    $(linker) name $^@ $(lflags) file {$(objs)} lib {$(win_libs)}
+!endif
+    @%make bind_res
+
+$(proj_name).res : $(proj_name).rc $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc) $(inc_dirs) $(inc_dirs_sys) -bt=$(host_os) -r $[@ -fo=$@

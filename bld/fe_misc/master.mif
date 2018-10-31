@@ -1,0 +1,13 @@
+proj_name = femisc
+femisc_autodepends = .autodepend
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+!include exerule.mif
+
+inc_dirs = -I"../h"
+
+.c: ../c
+
+all: optencod.exe msgencod.exe findhash.exe .symbolic

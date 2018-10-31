@@ -1,0 +1,37 @@
+proj_name       = ncurses
+
+ncurses_autodepends = .AUTODEPEND
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+.c: ../c
+
+ncurses_objs = &
+    access.obj &
+    comp_err.obj &
+    doalloc.obj &
+    fallback.obj &
+    free_tty.obj &
+    getenv_n.obj &
+    home_ter.obj &
+    lib_baud.obj &
+    lib_beep.obj &
+    lib_cur_.obj &
+    lib_napm.obj &
+    lib_setu.obj &
+    lib_tpar.obj &
+    lib_tput.obj &
+    lib_ttyf.obj &
+    read_ent.obj
+
+inc_dirs        = -I"../h"
+
+ncurses.lib : $(ncurses_objs) $(__MAKEFILES__)
+    @%make echo_lib
+!ifndef __WATCOM_TOOLS__
+    $(blib) $(bld_libflags) $(ncurses_objs)
+!else
+    $(librarian) $(libflags) $(ncurses_objs)
+!endif

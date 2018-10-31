@@ -1,0 +1,21 @@
+!ifdef %OWUSE_FILENAME_VERSION
+name = codevi$(bld_ver)
+!else
+name = codeview
+!endif
+
+imp_objs = &
+        cvmisc.obj &
+        cvld.obj &
+        cvmod.obj &
+        cvtype.obj &
+        cvsym.obj &
+        cvcue.obj &
+        cvvirt.obj &
+        cvloc.obj &
+        demangle.obj
+
+extra_incs = -I"$(lib_misc_dir)/h"
+extra_srcs = $(lib_misc_dir)/c
+
+!include ../../master.mif

@@ -1,0 +1,24 @@
+!ifeq sys_windowed 1
+!ifeq host_os os2
+aui_os2pm = 1
+!endif
+!endif
+!ifdef bootstrap
+aui_path = $(aui_dir)/$(objs_subdir)
+!else ifdef aui_os2pm
+aui_path = $(aui_dir)/$(objs_subdir).pm
+!else
+aui_path = $(aui_dir)/$(objs_subdir)
+!endif
+
+aui_dlgfiles = &
+    $(aui_path)/dlgrx.gdl &
+    $(aui_path)/dlgsrch.gdl &
+    $(aui_path)/dlgsrcha.gdl &
+    $(aui_path)/japrx.gdl &
+    $(aui_path)/japsrch.gdl &
+    $(aui_path)/japsrcha.gdl
+
+aui_inc_dirs = -I"$(aui_path)" -I"$(aui_dir)/h"
+aui_lib = $(aui_path)/aui.lib
+aui_rc_inc_dirs = -I"$(aui_path)" -I"$(aui_dir)/res" -I"$(aui_dir)/h"

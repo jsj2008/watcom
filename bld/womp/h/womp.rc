@@ -1,0 +1,34 @@
+/************************************************************************/
+/*                          WOMP RESOURCE FILE                          */
+/************************************************************************/
+/*
+ *  %c  : char
+ *  %s  : string
+ *  %x  : 4-digit hex number
+ *  %X  : 8-digit hex number
+ *  %1X, %2X : ordered %X
+ *  %t  : 2-digit hex number
+ *  %u  : integer
+ *  %Z  : message from 'system error' (see below)
+ */
+
+#include "wpmsg.h"
+
+STRINGTABLE
+BEGIN
+  #if defined( JAPANESE )
+    #define pick(c,e,j) c, [ j ]
+  #else
+    #define pick(c,e,j) c, [ e ]
+  #endif
+
+    #include "..\womp.msg"
+
+    #undef pick
+
+  #if defined( JAPANESE )
+    #include "usagej.grc"
+  #else
+    #include "usage.grc"
+  #endif
+END

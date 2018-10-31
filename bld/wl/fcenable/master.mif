@@ -1,0 +1,39 @@
+proj_name = fcenable
+
+fcenable_autodepends = .AUTODEPEND
+
+fcenable_trmem = 1
+
+memory_model_i86 = s
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+!include trmem.mif
+
+objs  = &
+fcenable.obj &
+mem.obj &
+records.obj &
+$(trmem_objs)
+
+!ifeq host_os os2
+objs += spawn.obj
+!endif
+
+.c: ../c;$(trmem_dir)
+
+inc_dirs = -I"../h" -I"$(trmem_dir)"
+inc_dirs_os2 = -I"$(clib_dir)/process/h"
+
+extra_c_flags_mem      = $(trmem_cover_cflags)
+extra_c_flags_trmem    = $(trmem_cflags)
+
+fcenable.exe : $(objs) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) $(ldflags)
+!else
+    $(linker) name $^@ $(lflags) file {$(objs)}
+!endif

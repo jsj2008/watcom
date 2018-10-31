@@ -1,0 +1,20 @@
+proj_name = pbide
+
+pbide_autodepends = .AUTODEPEND
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+.c: ..
+
+extra_c_flags_win =-zW
+
+dlldbg.exe : dlldbg.obj dlldbg.res $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) file {dlldbg.obj}
+    @%make bind_res
+
+dlldbg.res : ../dlldbg.rc ../debugger.ico $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc) $(rc_flags) $[@ -fo=$@

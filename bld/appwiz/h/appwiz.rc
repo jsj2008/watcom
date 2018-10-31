@@ -1,0 +1,19 @@
+#include <windows.h>
+#include "newproj.h"
+#include "rcstr.gh"
+
+STRINGTABLE
+BEGIN
+    #define pick(c,e,j) c, [ e ]
+
+    #include "appwiz.msg"
+
+    #undef pick
+END
+
+#ifdef __NT__
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST MOVEABLE PURE "appmanif.xml"
+#endif
+
+#include "newproj.dlg"
+

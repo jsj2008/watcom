@@ -1,0 +1,19 @@
+proj_name = res2c
+
+res2c_autodepends = .AUTODEPEND
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+inc_dirs = -I..
+
+.c: ..
+
+objs =  resdump.obj  &
+        loadchar.obj &
+        loadtype.obj
+
+$(proj_name).exe : $(objs) $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) file {$(objs)}

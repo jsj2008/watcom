@@ -1,0 +1,50 @@
+#include <windows.h>
+#include "ddemenu.h"
+#include "rcstr.gh"
+#include "uistr.gh"
+#include "cbfilt.h"
+#include "msgfilt.h"
+#include "about.h"
+#include "banner.h"
+
+#define FIRST_COPYRIGHT_YEAR 1994
+
+#ifdef __NT__
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST MOVEABLE PURE "appmanif.xml"
+#endif
+
+"APPLICON" ICON "ddespy.ico"
+
+"CONV"    BITMAP "conv.bmp"
+"LINK"    BITMAP "link.bmp"
+"STRING"  BITMAP "string.bmp"
+"SERVER"  BITMAP "server.bmp"
+"LOG"     BITMAP "log.bmp"
+"MARK"    BITMAP "mark.bmp"
+"ERASE"   BITMAP "erase.bmp"
+"HWNDAKA" BITMAP "hwndaka.bmp"
+"CONVAKA" BITMAP "convaka.bmp"
+"TASKAKA" BITMAP "taskaka.bmp"
+
+#include "ddemenu.rc"
+
+STRINGTABLE
+BEGIN
+  #ifdef JAPANESE
+    #define pick(c,e,j) c, [ j ]
+  #else
+    #define pick(c,e,j) c, [ e ]
+  #endif
+
+    #include "rcstrmsg.gh"
+    #include "uistrmsg.gh"
+
+    #undef pick
+END
+
+#include "msgfilt.dlg"
+#include "cbfilt.dlg"
+#include "log.rc"
+#include "alias.rc"
+#include "mark.rc"
+#include "about.dlg"

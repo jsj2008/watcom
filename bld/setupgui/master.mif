@@ -1,0 +1,278 @@
+proj_name = setupgui
+
+setupgui_autodepends = .AUTODEPEND
+
+.EXTENSIONS: .rc .ico .res
+
+.ERROR:
+
+additional_cleanup = *.i *.rex setup.inf
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+!include win386.mif
+
+!include $(commonui_dir)/client.mif
+!include $(wpi_dir)/client.mif
+!include $(gui_dir)/client.mif
+!include $(ui_dir)/client.mif
+
+!include wres.mif
+
+# systems where manifest file resource must be added to .EXE
+manifest_nt_386 = ntmanif.res
+#manifest_nt_x64 = ntmanif.res
+
+!include ntmanif.mif
+
+# objects
+##########
+objs = &
+    setup.obj       &
+    setupfil.obj    &
+    setupinf.obj    &
+    guistat.obj     &
+    dlggen.obj      &
+    guiutils.obj    &
+    guicolor.obj    &
+    guictrl.obj     &
+    genvbl.obj      &
+    dynarray.obj    &
+    gendlg.obj      &
+    hash.obj        &
+    nlmver.obj      &
+    utils.obj
+
+!ifdef patch
+objs +=             &
+    exetype.obj     &
+    oldfile.obj     &
+    bpatch.obj      &
+    patchio.obj     &
+    myio.obj        &
+    dopatch.obj
+!endif
+
+#                     i_dos i_linux i_nt i_os2 i_win i_wini86 i_win386
+#=====================================================================
+!inject setupio.obj   i_dos i_linux i_nt i_os2                i_win386
+!inject setupiod.obj                                 i_wini86
+!inject os2util.obj                      i_os2
+!inject winutil.obj                 i_nt i_os2 i_win
+!inject winddeml.obj                i_nt       i_win
+
+objs += $(i_$(host_os)) $(i_$(host_os)$(host_cpu))
+
+!ifeq sys_windowed 1
+
+libs_nt  = $(gui_lib)
+libs_os2 = $(gui_lib)
+libs_win = $(gui_lib)
+
+!else
+
+# custom version of resource finder
+extra_c_flags_loadfind = $(wres_inc_dirs)
+objs += loadfind.obj
+
+libs_dos   = $(gui_lib) $(ui_lib) $(wres_lib)
+libs_linux = $(gui_lib) $(ui_lib) $(wres_lib)
+libs_nt    = $(gui_lib) $(ui_lib) $(wres_lib)
+libs_os2   = $(gui_lib) $(ui_lib) $(wres_lib)
+
+!endif
+
+libs_dos    += ../ziplib/osi386/ziplib.lib
+libs_linux  += ../ziplib/linux$(host_cpu)/ziplib.lib
+libs_nt     += ../ziplib/osi$(host_cpu)/ziplib.lib
+libs_os2    += ../ziplib/osi386/ziplib.lib
+libs_win386 += ../ziplib/osi386/ziplib.lib
+
+libs_dos    += ../zlib/osi386/zlib.lib
+libs_linux  += ../zlib/osi$(host_cpu)/zlib.lib
+libs_nt     += ../zlib/osi$(host_cpu)/zlib.lib
+libs_os2    += ../zlib/osi386/zlib.lib
+libs_win386 += ../zlib/osi386/zlib.lib
+
+libs = $(libs_$(host_os)) $(libs_$(host_os)$(host_cpu))
+
+!ifeq sys_windowed 1
+!ifeq host_os win
+!ifeq host_cpu i86
+dosstub = 1
+!endif
+!endif
+!endif
+
+extra_deps = $(objs) $(libs) setup.lnk
+!ifdef dosstub
+extra_deps += dosstub.exe
+!endif
+!ifneq sys_windowed 1
+extra_deps += $(manifest_$(host_os)_$(host_cpu)) wresui.res
+!endif
+
+# cflags
+#########
+!ifneq sys_windowed 1
+extra_cpp_flags += -D_UI
+!endif
+!ifdef patch
+extra_cpp_flags += -DPATCH -DINSTALL_PROGRAM
+!endif
+
+extra_c_flags = -s
+
+extra_c_flags_i86 = -zc
+
+#extra_c_flags_common = -fi=setupmem.h
+#extra_c_flags_io = -fi=setupmem.h
+
+# lflags
+#########
+
+# rc flags
+###########
+extra_rc_flags     = -r
+extra_rc_flags_win = -30 -D_WIN
+extra_rc_flags_nt  = -D_WINNT
+
+res_dir = ../res/$(host_os)
+
+!ifeq host_os os2
+!ifeq sys_windowed 1
+dep_res1 = ../h/setup.h setup.ico gui.rc
+!else
+dep_res1 = ../h/setup.h gui.rc
+!endif
+!else ifeq host_os dos
+dep_res1 = ../h/setup.h gui.rc
+!else ifeq host_os linux
+dep_res1 = ../h/setup.h gui.rc
+!else
+dep_res1 = ../h/setup.h setup.ico disk.ico gui.rc
+!endif
+
+# where to find objects
+########################
+
+.c : ../c
+!ifdef patch
+.c : $(bdiff_dir)/c;$(wpack_dir)/c
+!endif
+.c : $(trmem_dir)
+.rc : ../res;$(res_dir);$(gui_dir)/h
+.ico : $(res_dir)
+
+res_inc_dirs = -I"$(res_dir)" -I"../res" $(gui_inc_dirs) $(inc_dirs_sys)
+
+inc_dirs  = -I"../h" $(ui_inc_dirs) $(wpi_inc_dirs) $(gui_inc_dirs) $(commonui_inc_dirs)
+inc_dirs += -I"$(trmem_dir)" -I"$(libzip_dir)/lib"
+!ifdef patch
+inc_dirs += -I"$(bdiff_dir)/h" -I"$(wpack_dir)/h"
+!endif
+
+# explicit rules
+##################
+
+# systems where version resources must be added to .EXE
+version_res_exe_nt_386 = exever.res
+version_res_exe_nt_x64 = exever.res
+
+!include verrc.mif
+
+!ifeq sys_windowed 1
+all : csetup.exe f77setup.exe .SYMBOLIC
+!endif
+
+setup.exe : $(extra_deps) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) $(libs) $(ldflags)
+!else ifdef dosstub
+    $(linker) name $^@ op stub=dosstub.exe @setup.lnk
+!else
+    $(linker) name $^@ @setup.lnk
+!endif
+!ifneq sys_windowed 1
+    @%make bind_res_manifest
+    @%make bind_res_wresui
+!endif
+
+setup.lnk : $(__MAKEFILES__)
+    $(noecho)%create setup.lnk
+    @%append setup.lnk $(lflags)
+    @%append setup.lnk option verbose
+!ifeq host_os win
+!ifeq host_cpu 386
+    @%append setup.lnk option stack=24K
+!else
+    @%append setup.lnk option manyautodata, stack=20K, heap=10K
+    # Segments must be NONDISCARDABLE so that Windows will not attempt
+    # to load a segment after the user has swapped diskettes.
+    @%append setup.lnk SEGMENT CLASS 'CODE' MOVEABLE PRELOAD
+    @%append setup.lnk SEGMENT CLASS 'DATA' MOVEABLE PRELOAD
+    @%append setup.lnk LIBRARY ddeml
+!endif
+!else ifeq host_os os2
+    @%append setup.lnk option stack=30K
+!else ifeq host_os nt
+    @%append setup.lnk option stack=30K, heap=20K
+! ifneq host_cpu axp
+    @%append setup.lnk lib shell32.lib
+    @%append setup.lnk lib uuid.lib
+! endif
+!else ifeq host_os dos
+    @%append setup.lnk option stack=30K
+!else
+!endif
+!ifdef PROJECT_LIBS
+    @%append setup.lnk lib $(PROJECT_LIBS)
+!endif
+    @for %i in ( $(objs) ) do @%append setup.lnk file %i
+    @for %i in ( $(libs) ) do @%append setup.lnk lib %i
+
+nonibm.obj : $(clib_dir)/startup/c/nonibm.c $(__MAKEFILES__)
+
+wresui.res : setupui.rc $(dep_res1) $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc_aui) $(gui_inc_dirs) $[@ -fo=$^@
+
+csetup.res : setup.rc $(dep_res1) ../res/wcc.bmp $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc) $(rc_flags) -DCSETUP $(res_inc_dirs) $[@ -fo=$^@
+
+jcsetup.res : setup.rc $(dep_res1) ../res/wcc.bmp $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc) $(rc_flags) -DJCSETUP -DJAPANESE -zk0 $(res_inc_dirs) $[@ -fo=$^@
+
+f77setup.res : setup.rc $(dep_res1) ../res/f77.bmp $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc) $(rc_flags) -DF77SETUP $(res_inc_dirs) $[@ -fo=$^@
+
+jfsetup.res : setup.rc $(dep_res1) ../res/f77.bmp $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc) $(rc_flags) -DJFSETUP -DJAPANESE -zk0 $(res_inc_dirs) $[@ -fo=$^@
+
+setup.res : setup.rc $(dep_res1) ../res/generic.bmp $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc) $(rc_flags) $(res_inc_dirs) $[@ -fo=$^@
+
+dosstub.exe : dosstub.c $(__MAKEFILES__)
+    $(cl_i86) -zq -bcl=dos -os -d0 $(inc_dirs_lang_osi) $[@
+
+csetup.exe : csetup.res $(version_res_exe_$(host_os)_$(host_cpu)) setup.exe $(__MAKEFILES__)
+f77setup.exe : f77setup.res $(version_res_exe_$(host_os)_$(host_cpu)) setup.exe $(__MAKEFILES__)
+jcsetup.exe : jcsetup.res $(version_res_exe_$(host_os)_$(host_cpu)) setup.exe $(__MAKEFILES__)
+jfsetup.exe : jfsetup.res $(version_res_exe_$(host_os)_$(host_cpu)) setup.exe $(__MAKEFILES__)
+
+.res.exe :
+    cp setup.sym $^&.sym
+!ifdef win386
+    cp setup.exe $^&.rex
+    @%make bind_win386_add_res
+!else
+    cp setup.exe $^@
+    @%make bind_res_add_version_exe
+!endif

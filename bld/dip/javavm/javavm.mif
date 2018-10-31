@@ -1,0 +1,18 @@
+!ifdef %OWUSE_FILENAME_VERSION
+name = javavm$(bld_ver)
+!else
+name = javavm
+!endif
+
+imp_objs = &
+        jvmmisc.obj &
+        jvmld.obj &
+        jvmmod.obj &
+        jvmtype.obj &
+        jvmsym.obj &
+        jvmcue.obj &
+        jvmsupp.obj
+
+extra_incs = $(javasdk)/include;$(javasdk)/include/win32;$(java_src_dir)/src/win32/java/include;$(lang_root)/h/nt
+
+!include ../../master.mif

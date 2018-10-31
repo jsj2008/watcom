@@ -1,0 +1,37 @@
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+!include $(orl_dir)/client.mif
+!include $(dwarfw_dir)/client.mif
+
+.c: ../c;$(trmem_dir)
+.h: ../h;$(trmem_dir)
+
+inc_dirs = -I"$(dwarfr_dir)/h" -I"$(dwarfw_dir)/h" -I"$(orl_dir)/h" -I"$(trmem_dir)" -I"../h"
+
+!ifeq release 0
+extra_c_flags_test      = -of+
+extra_c_flags_trmemcvr  = -dTRMEM -of+
+extra_c_flags_trmem     = -dTRMEM -of+
+!endif
+
+dwdump_objs = dwdump.obj testdump.obj trmemcvr.obj
+!ifeq release 0
+dwdump_objs +=  trmem.obj
+!endif
+testcli_objs = testcli.obj testtest.obj testdump.obj
+
+all: dwdump.exe testcli.exe .symbolic
+
+dwdump.exe : $(dwdump_objs) $(orl_lib) $(__MAKEFILES__)
+    @%make echo_link
+!ifdef bootstrap
+    $(cc) $(c_flags) -o $^@ $(dwdump_objs) $(orl_lib) $(clib_dir)/$(objs_subdir)/libwatcom.a
+!else
+    $(linker) name $@ $(lflags) file {$(dwdump_objs)} lib {$(orl_lib)}
+!endif
+
+testcli.exe : $(testcli_objs) $(dwarfw_lib) $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $@ $(lflags) file {$(testcli_objs)} lib {$(dwarfw_lib)}

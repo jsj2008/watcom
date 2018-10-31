@@ -1,0 +1,42 @@
+proj_name       = owl
+owl_autodepends = .autodepend
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+inc_dirs    = -I"../h"
+
+.c: $(owl_dir)/c
+
+objs = owl.obj &
+    owbuffer.obj &
+    owcoff.obj &
+    owdebug.obj &
+    owelf.obj &
+    owemit.obj &
+    owfile.obj &
+    owreloc.obj &
+    owsect.obj &
+    owstring.obj &
+    owsymbol.obj &
+    owsymdmp.obj &
+    log.obj
+
+owl.lib : $(objs) $(__MAKEFILES__)
+    @%make echo_lib
+!ifndef __WATCOM_TOOLS__
+    $(blib) $(bld_libflags) $(objs)
+!else
+    $(librarian) $(libflags) $(objs)
+!endif
+
+
+bufftest.exe : bufftest.obj $(objs)
+    $(link) $(lflags) file bufftest option quiet name bufftest.exe file { $(objs) }
+
+strtest.exe : strtest.obj $(objs)
+    $(link) $(lflags) file strtest option quiet name strtest.exe file { $(objs) }
+
+patchtst.exe : patchtst.obj $(objs)
+    $(link) $(lflags) file patchtst option quiet name patchtst.exe file { $(objs) }

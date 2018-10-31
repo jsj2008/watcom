@@ -1,0 +1,29 @@
+#include "asmrcmsg.h"
+#include "wreslang.h"
+
+STRINGTABLE
+BEGIN
+    #define pick(c,e,j) (c + RLE_ENGLISH * MSG_LANG_SPACING), [ e ]
+
+    #include "../h/asmshare.msg"
+  #if defined( _STANDALONE_ )
+    #include "../h/womp.msg"
+    #include "../h/wasm.msg"
+
+    #include "usage.gh"
+  #endif
+
+    #undef pick
+
+    #define pick(c,e,j) (c + RLE_JAPANESE * MSG_LANG_SPACING), [ j ]
+
+    #include "../h/asmshare.msg"
+  #if defined( _STANDALONE_ )
+    #include "../h/womp.msg"
+    #include "../h/wasm.msg"
+
+    #include "usagej.gh"
+  #endif
+
+    #undef pick
+END

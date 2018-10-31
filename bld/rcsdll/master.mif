@@ -1,0 +1,63 @@
+proj_name = rcsdll
+
+!ifndef rcsdll_autodepends
+rcsdll_autodepends = .AUTODEPEND
+!endif
+
+suppress_zc = 1
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+objs_wini86 = mkssi.obj objcycle.obj
+objs_win386 = mkssi.obj objcycle.obj
+objs_ntaxp  = mkssi.obj
+objs_ntppc  = mkssi.obj
+objs_nt386  = mkssi.obj objcycle.obj
+objs_ntx64  = mkssi.obj objcycle.obj
+
+objs = rcsdll.obj inifile.obj $(objs_$(host_os)$(host_cpu)) $(extra_objs)
+
+.cpp : ..;../mkssi;../ocycle
+
+inc_dirs = -I..
+
+!ifdef sys_dll
+extra_cpp_flags = -D_RCSDLL_
+!endif
+
+extra_c_flags_win = -zw-zu
+
+extra_l_flags_dll = op implib
+extra_l_flags_dll_win = op rwr export WEP RESIDENT
+extra_l_flags_dll_os2 = initinstance terminstance pm op manyautodata
+
+# systems where version resources must be added to .DLL
+version_res_dll_nt_386 = version.res
+version_res_dll_nt_x64 = version.res
+
+!include verrc.mif
+
+!ifdef sys_dll
+
+rcsdll.dll : $(objs) $(version_res_dll_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) $(ldflags)
+!else
+    $(linker) name $@ $(lflags) file {$(objs)}
+!endif
+    @%make bind_res_version_dll
+
+!else
+
+rcsdll.lib: $(objs) $(__MAKEFILES__)
+    @%make echo_lib
+!ifndef __WATCOM_TOOLS__
+    $(blib) $(bld_libflags) $(objs)
+!else
+    $(librarian) $(libflags) $(objs)
+!endif
+
+!endif

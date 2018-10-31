@@ -1,0 +1,129 @@
+proj_name = wdis
+
+!ifndef wdis_autodepends
+wdis_autodepends = .AUTODEPEND
+!endif
+
+wdis_trmem = 1
+
+.EXTENSIONS: .rc .msg
+
+exe_name = $(proj_name).exe
+
+additional_cleanup = *.u
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+!include osi.mif
+
+!include $(orl_dir)/client.mif
+!include ../dis.mif
+
+!include wres.mif
+!include trmem.mif
+
+libs = $(orl_lib) $(wres_lib)
+
+extra_cpp_flags = -D__DISASM__
+
+extra_c_flags_memfuncs = $(trmem_cover_cflags)
+extra_c_flags_trmem    = $(trmem_cflags)
+
+extra_link_res_qnx = usage.u
+
+extra_l_flags_qnx = op res=$(extra_link_res_qnx), off=8k
+
+inc_dirs  = -I. $(dis_includes) -I"$(disasm_dir)/stand/h"
+inc_dirs += -I"$(disasm_dir)/h" -I"$(orl_dir)/h" -I"$(lib_misc_dir)/h"
+inc_dirs += -I"$(comp_cfg_dir)/h"
+
+.c: .;$(trmem_dir);$(disasm_dir)/stand/c;$(dis_srcs);$(lib_misc_dir)/c;$(watcom_dir)/c
+.h: $(disasm_dir)/stand/h;$(dis_hdirs);$(lib_misc_dir)/h
+.rc : $(disasm_dir)/stand/h
+.msg : $(disasm_dir)/stand
+
+stand_objs      = args.obj &
+                buffer.obj &
+                dwarf.obj &
+                externs.obj &
+                formasm.obj &
+                fini.obj &
+                groups.obj &
+                identsec.obj &
+                init.obj &
+                hashtabl.obj &
+                labproc.obj &
+                main.obj &
+                memfuncs.obj &
+                msg.obj &
+                pass1.obj &
+                pass2.obj &
+                pdata.obj &
+                print.obj &
+                publics.obj &
+                srcmix.obj &
+                refproc.obj &
+                cmdlhelp.obj
+
+objs = $(stand_objs) $(dis_objs) demangle.obj $(trmem_objs)
+
+# systems where version resources must be added to .EXE
+version_res_exe_nt_386 = exever.res
+version_res_exe_nt_x64 = exever.res
+
+!include verrc.mif
+
+$(exe_name) : msg.gh $(dis_prereq) $(objs) $(libs) wresui.res $(version_res_exe_$(host_os)_$(host_cpu)) $(osildr) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) $(libs) $(ldflags)
+!else
+    $(linker) name $(lname) $(lflags) file {$(objs)} lib {$(libs)}
+    @%make bind_osildr
+!endif
+    @%make bind_res_version_exe
+    @%make bind_res_wresui
+
+distbls.gh : ./disbuild.exe $(__MAKEFILES__)
+    @%make echo_execute
+    $(noecho)$[@
+
+./disbuild.exe : $(disasm_dir)/core/c/disbuild.c $(disbuild_headers) $(__MAKEFILES__)
+    @%make echo_bldcl
+    $(bld_cl) $[@ -DNDIS_$(target_cpu) -I"../h" $(dis_includes) $(bld_clflags) $(bld_ldflags)
+
+wresui.res : wdis.rc usage.gh usagej.gh msg.gh $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc_aui) $[@ -I"../stand/h" -I"../stand" -fo=$@
+
+msg.gh : ../stand/wdis.msg $(__MAKEFILES__)
+    @%make echo_awk
+    $(awk) -v base=WDIS_LITERAL_BASE -f $(build_dir)/makemsg.awk -v OUTFILE=$^. $[@
+
+optencod_opt_qnx = -u $(extra_link_res_qnx)
+
+optencod_targ_bsd   = bsd
+optencod_targ_haiku = haiku
+optencod_targ_linux = linux
+optencod_targ_osx   = osx
+optencod_targ_qnx   = qnx
+
+usage.gh : ../stand/options.gml $(__MAKEFILES__)
+    @%make echo_optencod
+    $(noecho)optencod -q $(optencod_opt_$(host_os)) $[@ $(nulldevice) $(nulldevice) usage.tmp $(optencod_targ_$(host_os))
+    @%append usage.tmp "."
+    @%make echo_awk
+    $(awk) -v base=MSG_USAGE_BASE -f $(build_dir)/makemsg1.awk -v OUTFILE=$^. usage.tmp
+
+usagej.gh : ../stand/options.gml $(__MAKEFILES__)
+    @%make echo_optencod
+    $(noecho)optencod -l 1 -q $[@ $(nulldevice) $(nulldevice) usagej.tmp $(optencod_targ_$(host_os))
+    @%append usagej.tmp "."
+    @%make echo_awk
+    $(awk) -v base=MSG_USAGE_BASE -v lang=1 -f $(build_dir)/makemsg1.awk -v OUTFILE=$^. usagej.tmp
+
+echo_optencod : .PROCEDURE .EXPLICIT
+!ifeq verbose 0
+    @echo optencod $@
+!endif

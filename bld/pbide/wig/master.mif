@@ -1,0 +1,71 @@
+proj_name = wig
+
+wig_autodepends = .AUTODEPEND
+
+!ifeq sys_dll 1
+xname = pbide.dll
+!else
+xname = wig.exe
+!endif
+
+suppress_zc = 1
+
+.EXTENSIONS: .gh .y
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+objs += keywords.obj &
+        scanner.obj &
+        mem.obj &
+        hashtab.obj &
+        srusuprt.obj &
+        gen_cpp.obj &
+        options.obj &
+        list.obj &
+        filelist.obj &
+        wig.obj
+
+!ifeq release 0
+objs += trmemcvr.obj trmem.obj
+!endif
+
+.h      : ../h;
+.c      : ../c;$(trmem_dir)
+.y      : ../c
+
+inc_dirs = -I. -I"../h" -I"$(trmem_dir)"
+
+lnk = wig.lnk
+
+extra_cpp_flags =
+!ifeq sys_dll 1
+extra_cpp_flags += -D__DLL__
+!endif
+!ifeq release 0
+extra_cpp_flags += -DTRMEM
+!endif
+
+extra_c_flags =
+!ifeq release 0
+extra_c_flags += -of+
+!endif
+!ifeq sys_dll 1
+extra_c_flags_win = -zw -zu
+!else
+extra_c_flags_win = -zW
+!endif
+
+extra_l_flags_dll_win = op rwr export WEP RESIDENT
+
+$(xname) : ytab.h $(objs) $(__MAKEFILES__)
+    $(noecho)%create $(lnk)
+    @for %i in ($(libs)) do @@%append $(lnk) library %i
+    @for %i in ($(objs)) do @@%append $(lnk) file %i
+    @%make echo_link
+    $(linker) name $^@ $(lflags) @$(lnk)
+
+ytab.c ytab.h: sruparse.y ../c/yydriver.c
+    @%make echo_yacc
+    $(yacc) -d $[@ ../c/yydriver.c > $(nulldevice)

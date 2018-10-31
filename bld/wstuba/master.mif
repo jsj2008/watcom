@@ -1,0 +1,21 @@
+proj_name = wstuba
+
+wstuba_autodepends = .autodepend
+
+memory_model_i86 = s
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+all : wstub.exe wstubq.exe
+
+.asm : ..
+
+wstub.exe : wstub.obj $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) file $[@
+
+wstubq.exe : wstubq.obj $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) file $[@

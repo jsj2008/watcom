@@ -1,0 +1,25 @@
+/*
+ *  arch/mips/sys/types.h
+ *
+:include crwatcnt.sp
+ */
+
+/*
+ *  POSIX 1003.1 types
+ */
+:include dev_t.sp
+:include ino_t.sp
+:include mode_t.sp
+:include nlink_t.sp
+:include uid_t.sp
+:include gid_t.sp
+:include blksizet.sp
+:include blkcnt_t.sp
+:include id_t.sp
+
+#define major(device)           ((int)(((device) >> 8) & 0xFF))
+#define minor(device)           ((int)((device) & 0xff))
+#define makedev(major,minor)    ((dev_t)(((major) << 8) | (minor)))
+
+typedef char            *caddr_t;
+typedef long            daddr_t;

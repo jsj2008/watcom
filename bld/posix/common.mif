@@ -1,0 +1,70 @@
+#
+#   COMMON:     common definitions of compiler and linker
+#
+
+#
+#   Macros used by this file:
+#
+#   posix_dir   Must point to the root of the posix project.
+#
+#   cflags      If defined, these options to the compiler override the
+#               defaults selected by this file.
+#
+#   make_lib    If this is defined then wmake was invoked to make posixlib.
+#
+#   if make_lib isn't defined, then the following must be defined:
+#
+#   name        The name of the command which is being built.  The
+#               directory $(posix_dir)/src/$(name) must exist, and
+#               contain the source for the command.
+
+#
+#       some people don't have the linker variable in their makeinit
+#
+proj_name = posix
+
+posix_autodepends = .AUTODEPEND
+
+!ifndef model
+!ifeq host_cpu i86
+model=c
+!else ifeq host_cpu 386
+!ifeq host_os qnx
+model=s
+!else
+model=f
+!endif
+!endif
+!endif
+
+memory_model_i86=$(model)
+memory_model_386=$(model)
+
+!ifdef __UNIX__
+to_os_path=\=/
+!else
+to_os_path=/=\
+!endif
+
+!include cproj.mif
+!include defrule.mif
+
+subdir_i86 = m$(model)
+subdir_386 = m$(model)
+subdir_x64 = _s
+subdir_axp = _s
+subdir_mps = _s
+subdir_ppc = _s
+
+!ifdef bootstrap
+libdir=$(subdir_$(host_cpu))
+!else
+libdir=$(posix_dir)/misc/$(host_os)$(host_cpu)/$(subdir_$(host_cpu))
+!endif
+
+#
+#       compiler options
+#
+
+extra_cppflags_ntaxp = -DWIN32 -D_WIN32
+extra_cpp_flags      += -DSTANDALONE_RX $(extra_cppflags_$(host_os)$(host_cpu))

@@ -1,0 +1,43 @@
+# WIPFC Builder Control file
+# ==========================
+
+set PROJNAME=wipfc
+
+set BINTOOL=0
+
+set PROJDIR=<CWD>
+
+[ INCLUDE <OWROOT>/build/prolog.ctl ]
+
+[ INCLUDE <OWROOT>/build/defrule.ctl ]
+
+[ BLOCK <1> rel ]
+#================
+    cdsay <PROJDIR>
+
+[ BLOCK <BINTOOL> build ]
+#========================
+    cdsay <PROJDIR>
+    <CPCMD> <OWOBJDIR>/wipfc.exe <OWBINDIR>/bwipfc<CMDEXT>
+
+[ BLOCK <BINTOOL> clean ]
+#========================
+    echo rm -f <OWBINDIR>/bwipfc<CMDEXT>
+    rm -f <OWBINDIR>/bwipfc<CMDEXT>
+
+[ BLOCK <1> rel cprel ]
+#======================
+    <CPCMD> helper/*.nls          <OWRELROOT>/wipfc/
+    <CPCMD> helper/*.txt          <OWRELROOT>/wipfc/
+
+    <CCCMD> dos386/wipfc.exe      <OWRELROOT>/binw/
+    <CCCMD> os2386/wipfc.exe      <OWRELROOT>/binp/
+    <CCCMD> nt386/wipfc.exe       <OWRELROOT>/binnt/
+    <CCCMD> linux386/wipfc.exe    <OWRELROOT>/binl/wipfc
+
+    <CCCMD> ntx64/wipfc.exe       <OWRELROOT>/binnt64/
+    <CCCMD> linuxx64/wipfc.exe    <OWRELROOT>/binl64/wipfc
+
+[ BLOCK . . ]
+
+[ INCLUDE <OWROOT>/build/epilog.ctl ]

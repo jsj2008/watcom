@@ -1,0 +1,279 @@
+# Known bugs: if you build a dos386 version, it will build fine but complain
+#             about not being able to find the message file.
+
+proj_name = bdiff
+
+bdiff_autodepend = .AUTODEPENDS
+
+all_execs = bpatch.exe bdiff.exe bpcmt.exe bplevel.exe bdump.exe wpatch.exe wcpatch.exe
+
+additional_cleanup_subdir = $(all_execs:.exe=)
+
+#debug_bdiff = 1
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+!include wres.mif
+
+# systems where manifest file resource must be added to .EXE
+manifest_nt_386 = ntmanif.res
+#manifest_nt_x64 = ntmanif.res
+
+!include ntmanif.mif
+
+.c : ../c;$(watcom_dir)/c
+
+inc_dirs = -I"../h" -I"$(dip_dir)/watcom/h"
+
+all : $(all_execs)
+
+#
+# WCPATCH. Create patch.
+#
+__subdir__=wcpatch
+!include subdrule.mif
+
+extra_cpp_wcpatch_flags = -DBDIFF -D_WPATCH
+!ifdef debug_bdiff
+extra_cpp_wcpatch_flags += -DUSE_DBGINFO
+!endif
+
+wcpatch_objs = &
+    $+$(__subdir__)$-/dopatch.obj &
+    $+$(__subdir__)$-/msg.obj &
+    $+$(__subdir__)$-/wcptchio.obj &
+    $+$(__subdir__)$-/wcpatch.obj &
+    $+$(__subdir__)$-/wbdiff.obj &
+    $+$(__subdir__)$-/diff.obj
+
+!ifdef debug_bdiff
+wcpatch_objs += $+$(__subdir__)$-/symtab.obj
+!endif
+
+wcpatch.exe : $(wcpatch_objs) $(wres_lib) bdiff.res $(manifest_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    @%make echo_link
+    $(cl) $(clflags) $(wcpatch_objs) $(wres_lib) $(ldflags)
+!else
+    $(noecho)%create $^&.lnk
+    @%append $^&.lnk $(lflags)
+    @%append $^&.lnk lib $(wres_lib)
+    @for %i in ($(wcpatch_objs)) do @%append $^&.lnk file %i
+    @%make echo_link
+    $(linker) name $^@ @$^&.lnk
+!endif
+    @%make bind_res_manifest
+    @%make bind_res_bdiff
+
+#
+# WPATCH. Apply patch.
+#
+__subdir__=wpatch
+!include subdrule.mif
+
+extra_cpp_wpatch_flags = -D_WPATCH
+
+wpatch_objs = &
+    $+$(__subdir__)$-/dopatch.obj &
+    $+$(__subdir__)$-/msg.obj &
+    $+$(__subdir__)$-/myio.obj &
+    $+$(__subdir__)$-/oldfile.obj &
+    $+$(__subdir__)$-/wpatchio.obj &
+    $+$(__subdir__)$-/wpatch.obj &
+    $+$(__subdir__)$-/bpatch.obj
+
+wpatch.exe : $(wpatch_objs) $(wres_lib) bpatch.res $(manifest_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    @%make echo_link
+    $(cl) $(clflags) $(wpatch_objs) $(wres_lib) $(ldflags)
+!else
+    $(noecho)%create $^&.lnk
+    @%append $^&.lnk $(lflags)
+    @%append $^&.lnk lib $(wres_lib)
+    @for %i in ($(wpatch_objs)) do @%append $^&.lnk file %i
+    @%make echo_link
+    $(linker) name $^@ @$^&.lnk
+!endif
+    @%make bind_res_manifest
+    @%make bind_res_bpatch
+
+#
+# BPATCH.
+#
+__subdir__=bpatch
+!include subdrule.mif
+
+extra_cpp_bpatch_flags = -D_WPATCH
+
+bpatch_objs = &
+    $+$(__subdir__)$-/bpatch.obj &
+    $+$(__subdir__)$-/dopatch.obj &
+    $+$(__subdir__)$-/msg.obj &
+    $+$(__subdir__)$-/myio.obj &
+    $+$(__subdir__)$-/oldfile.obj &
+    $+$(__subdir__)$-/patchio.obj &
+    $+$(__subdir__)$-/patmain.obj
+
+bpatch.exe : $(bpatch_objs) $(wres_lib) bpatch.res $(manifest_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    @%make echo_link
+    $(cl) $(clflags) $(bpatch_objs) $(wres_lib) $(ldflags)
+!else
+    $(noecho)%create $^&.lnk
+    @%append $^&.lnk $(lflags)
+    @%append $^&.lnk lib $(wres_lib)
+    @for %i in ($(bpatch_objs)) do @%append $^&.lnk file %i
+    @%make echo_link
+    $(linker) name $^@ @$^&.lnk
+!endif
+    @%make bind_res_manifest
+    @%make bind_res_bpatch
+
+#
+# BDUMP.
+#
+__subdir__=bdump
+!include subdrule.mif
+
+extra_cpp_bdump_flags = -DBDUMP
+
+bdump_objs = &
+    $+$(__subdir__)$-/dopatch.obj &
+    $+$(__subdir__)$-/msg.obj &
+    $+$(__subdir__)$-/myio.obj &
+    $+$(__subdir__)$-/oldfile.obj &
+    $+$(__subdir__)$-/patchio.obj &
+    $+$(__subdir__)$-/patmain.obj
+
+bdump.exe : $(bdump_objs) $(wres_lib) bdump.res $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    @%make echo_link
+    $(cl) $(clflags) $(bdump_objs) $(wres_lib) $(ldflags)
+!else
+    $(noecho)%create $^&.lnk
+    @%append $^&.lnk $(lflags)
+    @%append $^&.lnk lib $(wres_lib)
+    @for %i in ($(bdump_objs)) do @%append $^&.lnk file %i
+    @%make echo_link
+    $(linker) name $^@ @$^&.lnk
+!endif
+    @%make bind_res_bdump
+
+#
+# BDIFF.
+#
+__subdir__=bdiff
+!include subdrule.mif
+
+extra_cpp_bdiff_flags = -DBDIFF
+!ifdef debug_bdiff
+extra_cpp_bdiff_flags += -DUSE_DBGINFO
+!endif
+
+bdiff_objs = &
+    $+$(__subdir__)$-/bdiff.obj &
+    $+$(__subdir__)$-/diff.obj &
+    $+$(__subdir__)$-/dopatch.obj &
+    $+$(__subdir__)$-/msg.obj
+
+!ifdef debug_bdiff
+bdiff_objs += $+$(__subdir__)$-/symtab.obj
+!endif
+
+bdiff.exe : $(bdiff_objs) $(wres_lib) bdiff.res $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    @%make echo_link
+    $(cl) $(clflags) $(bdiff_objs) $(wres_lib) $(ldflags)
+!else
+    $(noecho)%create $^&.lnk
+    @%append $^&.lnk $(lflags)
+    @%append $^&.lnk lib $(wres_lib)
+    @for %i in ($(bdiff_objs)) do @%append $^&.lnk file %i
+    @%make echo_link
+    $(linker) name $^@ @$^&.lnk
+!endif
+    @%make bind_res_bdiff
+
+#
+# BCMT
+#
+__subdir__=bpcmt
+!include subdrule.mif
+
+extra_cpp_bpcmt_flags = -DBPCMT
+
+bpcmt_objs = &
+    $+$(__subdir__)$-/bpcmt.obj
+
+bpcmt.exe : $(bpcmt_objs) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(bpcmt_objs) $(ldflags)
+!else
+    $(linker) name $^@ $(lflags) file {$(bpcmt_objs)}
+!endif
+
+#
+# BLEVEL
+#
+__subdir__=bplevel
+!include subdrule.mif
+
+extra_cpp_bplevel_flags = -DBPLEVEL
+
+bplevel_objs = &
+    $+$(__subdir__)$-/bplevel.obj
+
+bplevel.exe : $(bplevel_objs) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(bplevel_objs) $(ldflags)
+!else
+    $(linker) name $^@ $(lflags) file { $(bplevel_objs) }
+!endif
+
+# resources
+############
+pusage.gh : ../usage.sp
+    @%make echo_wsplice
+    $(wsplice) -kBPATCH -kENGLISH -t8 -f "pick(MSG_USAGE_FIRST+%$#%+, \"%s\", \"\")" $[@ $@
+
+pusagej.gh : ../usage.sp
+    @%make echo_wsplice
+    $(wsplice) -kBPATCH -kJAPANESE -t8 -f "pick(MSG_USAGE_FIRST+%$#%+, \"\", \"%s\")" $[@ $@
+
+dusage.gh : ../usage.sp
+    @%make echo_wsplice
+    $(wsplice) -kBDIFF -kENGLISH -k$(_OS) -t8 -f "pick(MSG_USAGE_FIRST+%$#%+, \"%s\", \"\")" $[@ $@
+
+bpatch.res : ../bpatch.rc ../h/bpatch.h pusage.gh pusagej.gh
+    @%make echo_rc
+    $(rc_aui) -I.. -DBPATCH $[@ -fo=$^@
+
+bdiff.res : ../bpatch.rc dusage.gh ../h/bpatch.h
+    @%make echo_rc
+    $(rc_aui) -I.. -DBDIFF $[@ -fo=$^@
+
+bdump.res : ../bpatch.rc dusage.gh ../h/bpatch.h
+    @%make echo_rc
+    $(rc_aui) -I.. -DBDUMP $[@ -fo=$^@
+
+bind_res_bdiff: .PROCEDURE .EXPLICIT
+!ifeq verbose 0
+    @echo bind res $@
+!endif
+    $(wstrip) -q -a -r $^@ . bdiff.res
+
+bind_res_bpatch: .PROCEDURE .EXPLICIT
+!ifeq verbose 0
+    @echo bind res $@
+!endif
+    $(wstrip) -q -a -r $^@ . bpatch.res
+
+bind_res_bdump: .PROCEDURE .EXPLICIT
+!ifeq verbose 0
+    @echo bind res $@
+!endif
+    $(wstrip) -q -a -r $^@ . bdump.res

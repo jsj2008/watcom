@@ -1,0 +1,77 @@
+#include "menu.h"
+#include "mark.h"
+#include "procctl.h"
+#include "about.h"
+#include "intdlg.h"
+#include "notelog.h"
+#include "stat.h"
+#include "regcmbo.h"
+#include "regedit.h"
+#include "thrdctl.h"
+#include "priority.h"
+#include "retcode.h"
+#include "drwatlog.h"
+#include "end.h"
+#ifndef CHICAGO
+#include "memory.h"
+#endif
+#include "memwnd.h"
+#include "memdmp.h"
+#include "rcstr.gh"
+#include "uistr.gh"
+#include "dipload.h"
+#include "banner.h"
+
+#define FIRST_COPYRIGHT_YEAR 1993
+
+#ifdef __NT__
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST MOVEABLE PURE "appmanif.xml"
+#endif
+
+"APPLICON" ICON "drwatcom.ico"
+"ERRICON" ICON "err.ico"
+
+#ifdef JAPANESE
+ #define sp( s1, s2 ) s2
+#else
+ #define sp( s1, s2 ) s1
+#endif
+#include "menu.rc"
+#undef sp
+
+STRINGTABLE
+BEGIN
+  #ifdef JAPANESE
+    #define pick(c,e,j)    c, [ j ]
+    #define madpick(c,e,j) __##c, [ j ]
+  #else
+    #define pick(c,e,j)    c, [ e ]
+    #define madpick(c,e,j) __##c, [ e ]
+  #endif
+
+    #include "rcstrmsg.gh"
+    #include "uistrmsg.gh"
+
+    #undef madpick
+    #undef pick
+END
+
+#include "procctl.dlg"
+#include "about.dlg"
+#include "mark.rc"
+#include "intdlg.dlg"
+#include "stat.dlg"
+#include "regcmbo.dlg"
+#include "regedit.dlg"
+#include "notelog.dlg"
+#include "thrdctl.dlg"
+#include "priority.dlg"
+#include "retcode.dlg"
+#include "drwatlog.dlg"
+#include "end.dlg"
+#ifndef CHICAGO
+#include "memory.dlg"
+#endif
+#include "memwnd.rc"
+#include "memdmp.dlg"
+#include "dipload.dlg"

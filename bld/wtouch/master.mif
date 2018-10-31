@@ -1,0 +1,53 @@
+proj_name = wtouch
+
+wtouch_autodepends = .AUTODEPEND
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+!include wres.mif
+
+.EXTENSIONS: .msg .vi .rc .sp
+
+inc_dirs = -I. -I.. -I"$(clib_dir)/h"
+
+.c .msg .vi .rc .sp: ..
+
+objs =  touch.obj    &
+        dtparse.obj  &
+        wtmsg.obj
+
+libs = $(wres_lib)
+
+# systems where version resources must be added to .EXE
+version_res_exe_nt_386 = exever.res
+version_res_exe_nt_x64 = exever.res
+
+!include verrc.mif
+
+$(proj_name).exe : msg.gh $(objs) $(libs) wresui.res $(version_res_exe_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) $(libs) $(ldflags)
+!else
+    $(linker) name $^@ $(lflags) file { $(objs) } lib {$(libs)}
+!endif
+    @%make bind_res_version_exe
+    @%make bind_res_wresui
+
+wresui.res : $(proj_name).rc $(proj_name).msg usage.gh usagej.gh msg.gh $(__MAKEFILES__)
+    @%make echo_rc
+    $(rc_aui) $[@ -fo=$^@
+
+usage.gh : usage.sp $(__MAKEFILES__)
+    @%make echo_wsplice
+    $(wsplice) -kIS_RC -kENGLISH -t8 -f "pick((MSG_USAGE_BASE+%$#%+), \"%s\", \"\")" $[@ $@
+
+usagej.gh : usage.sp $(__MAKEFILES__)
+    @%make echo_wsplice
+    $(wsplice) -kIS_RC -kJAPANESE -t8 -f "pick((MSG_USAGE_BASE+%$#%+), \"\", \"%s\")" $[@ $@
+
+msg.gh : $(proj_name).msg $(__MAKEFILES__)
+    @%make echo_awk
+    $(awk) -v base=MSG_RC_BASE -f $(build_dir)/makemsg.awk -v OUTFILE=$^. $[@

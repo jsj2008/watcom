@@ -1,0 +1,171 @@
+#
+# Master makefile for creating trap files
+#
+
+description = 'Open Watcom Debugger Trap File'
+
+!ifdef test
+
+sys_x86_os2   = sys os2
+sys_x86_os2v2 = sys os2v2
+sys_x86_win   = sys windows
+sys_x86_nt    = sys nt
+sys_x86_dos   = sys dos
+sys_x86_rdos  = sys rdos_dll
+sys_x86_qnx   = sys qnx
+sys_x86_linux = sys linux
+sys_axp_nt    = sys ntaxp
+
+trap_ext_os2_i86     = cli1.exe
+trap_ext_qnx_i86     = cli.qnx
+trap_ext_qnx_386     = cli.qnx
+trap_ext_win_i86     = cliw.exe
+
+!ifdef trap_ext_$(host_os)_$(host_cpu)
+trap_basename = $(xname)
+!else
+trap_basename = $(xname)cli
+!endif
+
+!ifdef trap_ext_$(host_os)_$(host_cpu)
+target = $(trap_basename)$(trap_ext_$(host_os)_$(host_cpu))
+!else
+target = $(trap_basename).exe
+!endif
+
+TRAP_common_objs = testcli.obj
+TRAP_remote_objs =
+
+!else
+
+sys_x86_os2  = sys os2 dll initinstance &
+            export TrapInit_.1 &
+            export TrapFini_.2 &
+            export TrapRequest_.3 &
+            op modname=$^& &
+            option description $(description)
+sys_x86_os2v2  = sys os2v2 dll initinstance terminstance &
+            export TrapInit_.1 &
+            export TrapFini_.2 &
+            export TrapRequest_.3 &
+            lib os2386.lib &
+            op modname=$^& &
+            option description $(description)
+sys_x86_win  = sys windows_dll &
+            export WEP.1 RESIDENT &
+            export TRAPINIT.2 &
+            export TRAPFINI.3 &
+            export TRAPREQUEST.4 &
+            export INPUTHOOK.5 &
+            export INFOFUNCTION.6 &
+            export HARDMODECHECK.7 &
+            export GETHWNDFUNC.8 &
+            export SETHARDMODE.12 &
+            export UNLOCKINPUT.13 &
+            op modname=$^& &
+#            option rwr &
+            option description $(description)
+sys_x86_nt   = sys nt_dll initinstance opt dosseg &
+            export TrapInit_.1 &
+            export TrapFini_.2 &
+            export TrapRequest_.3 &
+!ifneq reg_dll 1 # build regular DLL and don't try any funny stuff
+            export InfoFunction_.4 &
+#           remove reference to run-time code
+            alias __DLLstart_='_LibMain@12' &
+!endif
+            op modname=$^& &
+            option description $(description) &
+!ifneq release 0
+            $($(proj_name)_dllbase_nt_$(host_cpu)_$(name))
+!endif
+
+sys_x86_dos  = sys dos
+
+sys_x86_rdos = sys rdos_dll &
+            export TrapInit_ &
+            export TrapFini_ &
+            export TrapRequest_ &
+            $($(proj_name)_dllbase_rdos_386_$(name))
+
+sys_x86_qnx  = sys pharlap_qnx disable 1014, 1023
+
+# For now Linux is linked as a PE DLL file since we have code to load
+# this under Linux already. Eventually it should be an ELF shared library.
+
+sys_x86_linux = sys pe_linux dll opt dosseg &
+            export TrapLoad_.1 &
+            option description $(description)
+
+sys_axp_nt   = sys ntaxp_dll initinstance &
+            export TrapInit.1 &
+            export TrapFini.2 &
+            export TrapRequest.3 &
+            export InfoFunction.4 &
+            option description $(description) &
+            op modname=$^&
+
+sys_ppc_nt   = sys ntppc_dll initinstance &
+            export TrapInit.1 &
+            export TrapFini.2 &
+            export TrapRequest.3 &
+            export InfoFunction.4 &
+            option description $(description) &
+            op modname=$^&
+
+sys_jvm_nt   = sys nt_dll initinstance opt dosseg &
+            export TrapInit_.1 &
+            export TrapFini_.2 &
+            export TrapRequest_.3 &
+            export InfoFunction_.4 &
+            export InterruptProgram_.5 &
+            export Terminate_.6 &
+# remove reference to run-time code
+            alias __DLLstart_='_LibMain@12' &
+            op modname=$^& &
+            option description $(description) &
+!ifneq release 0
+            $($(proj_name)_dllbase_nt_$(host_cpu)_$(name))
+!endif
+
+trap_ext_nt          = .dll
+trap_ext_os2_os2     = .dll
+trap_ext_os2_os2v2   = .d32
+trap_ext_rdos        = .dll
+trap_ext_win         = .dll
+
+!ifdef %OWUSE_FILENAME_VERSION
+trap_basename = $(xname)$(bld_ver)
+!else
+trap_basename = $(xname)
+!endif
+
+!ifdef trap_ext_$(host_os)_$(target_os)
+target = $(trap_basename)$(trap_ext_$(host_os)_$(target_os))
+!else ifdef trap_ext_$(host_os)
+target = $(trap_basename)$(trap_ext_$(host_os))
+!else
+target = $(trap_basename).trp
+!endif
+!ifndef __WATCOM_TOOLS__
+!ifdef ext_lib_shared
+target = $(trap_basename)$(ext_lib_shared)
+!endif
+!endif
+
+
+TRAP_common_objs = $(os_prefix)strt.obj
+!ifeq srv par
+TRAP_common_objs += $(os_prefix)noth.obj
+!else ifeq srv ser
+TRAP_common_objs += $(os_prefix)noth.obj
+!endif
+
+TRAP_remote_objs = remote.obj
+!ifeq target_os win
+TRAP_remote_objs += winstub.obj
+!else ifeq target_os nt
+TRAP_remote_objs += ntstub.obj
+!endif
+
+!endif

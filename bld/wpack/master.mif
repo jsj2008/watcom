@@ -1,0 +1,38 @@
+proj_name = wpack
+
+wpack_autodepends = .AUTODEPEND
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+inc_dirs = -I"$(wpack_dir)/h" -I"$(wtouch_dir)" -I"$(clib_dir)/h"
+
+.c: ../c;$(wtouch_dir);$(clib_dir)/startup/c
+
+objs =               &
+        common.obj   &
+        decode.obj   &
+        dtparse.obj  &
+        encode.obj   &
+        io.obj       &
+        lookup.obj   &
+        message.obj  &
+        qsort.obj    &
+        wpack.obj
+
+!ifneq nowildargv 1
+!ifneq host_os linux
+objs += wildargv.obj
+!endif
+!endif
+
+$(proj_name).exe : $(objs) $(__MAKEFILES__)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) file { $(objs) }
+
+dtparse.obj : msg.gh
+
+msg.gh : $(wtouch_dir)/wtouch.msg
+    @%make echo_awk
+    $(awk) -v base=MSG_RC_BASE -f $(build_dir)/makemsg.awk -v OUTFILE=$^. $[@

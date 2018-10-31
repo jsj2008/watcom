@@ -1,0 +1,29 @@
+proj_name = ide2make
+proj_type = cxx
+
+!ifndef ide2make_autodepends
+ide2make_autodepends = .AUTODEPEND
+!endif
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+!include $(idelib_dir)/client.mif
+!include $(wclass_dir)/client.mif
+
+objs = bviper.obj
+
+inc_dirs = -I"../h" $(idelib_inc_dirs) $(wclass_inc_dirs)
+
+.cpp: ../cpp
+
+libs = $(idelib_lib) $(wclass_lib)
+
+$(proj_name).exe : $(objs) $(libs) $(__MAKEFILES__)
+    @%make echo_link
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) $(libs) $(ldflags)
+!else
+    $(linker) name $^@ $(lflags) file {$(objs)} lib {$(libs)}
+!endif

@@ -1,0 +1,30 @@
+wasm_inline_i86 = 1
+wasm_inline_386 = 1
+
+!ifdef wasm_inline_$(target_cpu)
+asminline_c = $(wasm_dir)/c
+asminline_inc_dirs = -I"$(wasm_dir)/h"
+asminline_objs = &
+    $(_subdir_)asmins.obj &
+    $(_subdir_)asmscan.obj &
+    $(_subdir_)asmline.obj &
+    $(_subdir_)asmsym.obj &
+    $(_subdir_)tbyte.obj &
+    $(_subdir_)asmlabel.obj &
+    $(_subdir_)asmfixup.obj &
+    $(_subdir_)asmmatch.obj &
+    $(_subdir_)asmdata.obj &
+    $(_subdir_)asmjump.obj &
+    $(_subdir_)asmexpnd.obj &
+    $(_subdir_)asmeval.obj
+
+!ifeq proj_name wfc
+asminline_deps = asmops.gh asmopsd.gh msg.gh
+!else ifeq proj_name F03
+asminline_deps = asmops.gh asmopsd.gh msg.gh
+!else
+asminline_deps = asmops.gh asmopsd.gh
+!endif
+
+asminline_lib =
+!endif

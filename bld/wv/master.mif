@@ -1,0 +1,503 @@
+#
+# Open Watcom Debugger makefile
+#
+proj_name = wv
+name = $(proj_name)
+
+!ifndef wv_autodepends
+wv_autodepends = .AUTODEPEND
+!endif
+
+additional_cleanup = *.u *.gdl
+
+#wv_trmem = 1
+
+!ifeq sys_windowed 1
+!ifeq host_os os2
+os2pm = 1
+!endif
+!endif
+
+!include cproj.mif
+!include defrule.mif
+!include deftarg.mif
+
+!include $(dig_dir)/digcli.mif
+!include $(dig_dir)/dipcli.mif
+!include $(dig_dir)/madcli.mif
+!include $(dig_dir)/trpcli.mif
+
+!include $(aui_dir)/client.mif
+!include $(gui_dir)/client.mif
+!include $(ui_dir)/client.mif
+
+!include wres.mif
+
+!include trmem.mif
+
+!include $(wv_dir)/wvobjs.mif
+
+objs = $(engine_objs) $(ui_objs)
+
+cdir   = $(wv_dir)/c
+hdir   = $(wv_dir)/h
+rdir   = ../../res
+
+!ifeq host_os nt
+sysdir = win
+!else
+sysdir = $(host_os)
+!endif
+
+!ifndef syscdir
+syscdir = ../c
+!endif
+!ifndef syshdir
+syshdir = ../h
+!endif
+!ifndef sysadir
+sysadir = ../asm
+!endif
+
+# cflags
+#########
+!ifeq sys_windowed 1
+extra_cpp_flags = -D__GUI__
+!else
+extra_cpp_flags = -D__CHAR__
+!endif
+!ifdef dll
+extra_cpp_flags += -D__NOUI__
+!endif
+!ifeq release 0
+extra_cpp_flags += -DAUI_DBG
+!endif
+!ifdef %OWUSE_FILENAME_VERSION
+extra_cpp_flags += -DUSE_FILENAME_VERSION=$(bld_ver)
+!endif
+extra_cpp_flags_nt = -DENABLE_TRAP_LOGGING
+
+extra_c_flags = -s
+
+extra_c_flags_win = -zW -zc
+extra_c_flags_qnx = -I"$(clib_dir)/h"
+!ifeq sys_windowed 1
+extra_c_flags_os2_i86 = -zc -zu
+!else
+extra_c_flags_os2_i86 = -zc
+!endif
+extra_c_flags_dos_i86 = -wo -of -D_OVERLAYED_
+
+extra_c_flags_trmem = $(trmem_cflags)
+extra_c_flags_dynmem = $(trmem_cover_cflags)
+extra_c_flags_srcmgt = $(incl_file_opts)__srcmgt.h
+
+# inc_dirs
+###########
+inc_dirs = -I. -I"$(wv_dir)/h" -I"$(dig_dir)/h" -I"$(syshdir)" -I"$(hdir)" -Ih -I"$(rdir)/strings"
+!ifndef dll
+inc_dirs += $(aui_inc_dirs) $(gui_inc_dirs) $(ui_inc_dirs)
+!ifeq sys_windowed 1
+inc_dirs += -I"$(gui_dir)/win/h"
+!else
+inc_dirs += -I"$(gui_dir)/ui/h"
+!endif
+inc_dirs += -I"$(hlpview_dir)/h"
+!endif
+!if "$(host_os)" == "linux" || "$(host_os)" == "bsd" || "$(host_os)" == "osx" || "$(host_os)" == "haiku"
+inc_dirs += -I"$(ncurses_dir)/h"
+!else ifeq host_os dos
+!ifeq host_cpu i86
+inc_dirs += -I"$(clib_dir)/heap/h"
+!endif
+!endif
+
+# libs
+###########
+libs = $(aui_lib) $(gui_lib) $(ui_lib) $(wres_lib)
+
+!ifdef ovl_dos
+endsect=end
+!endif
+
+lnk = wv.lnk
+lnk2 = wv2.lnk
+
+# lflags
+#########
+
+extra_link_res_qnx = usage.u
+
+lflags_win_i86 += memory font
+
+!ifeq sys_windowed 1
+extra_l_flags_win_i86 = op stack=12K, heap=15K import DEATH GDI.121 import RESURRECTION GDI.122
+!else
+extra_l_flags_win_i86 = op stack=15K, heap=10K, align=512
+!endif
+extra_l_flags_win = $(extra_l_flags_win_$(host_cpu))
+extra_l_flags_dos_i86 = op stack=12k, area=0
+# NB: DOS4GOPTIONS export is disabled due to incompatibility with DOS/4G 2.x
+extra_l_flags_dos_386 = op stack=12k #export DOS4GOPTIONS=_DOS4GOPTIONS
+extra_l_flags_dos = $(extra_l_flags_dos_$(host_cpu))
+!ifeq sys_windowed 1
+extra_l_flags_os2_i86 = op stack=19k, newfile
+extra_l_flags_os2_386 = imp WinThreadAssocQueue PMMERGE.5398
+!else
+extra_l_flags_os2_i86 = op stack=16k, newfile
+!endif
+extra_l_flags_os2 = $(extra_l_flags_os2_$(host_cpu))
+extra_l_flags_qnx_386 = opt stack = 0x8000, offset=0x9000, resource=$(extra_link_res_qnx)
+extra_l_flags_qnx = $(extra_l_flags_qnx_$(host_cpu))
+extra_l_flags_rdos =
+############
+
+# resources
+############
+wv_dialogs = &
+    dlgayn.gdl &
+    dlgbrk.gdl &
+    dlgcmd.gdl &
+    dlglist.gdl &
+    dlgnewp.gdl &
+    dlgoptn.gdl &
+    dlgvarx.gdl &
+    dlgamb.gdl &
+    dlgwind.gdl &
+    dlgstk.gdl &
+    dlghis.gdl &
+    dlgasync.gdl &
+    japayn.gdl &
+    japbrk.gdl &
+    japcmd.gdl &
+    japlist.gdl &
+    japnewp.gdl &
+    japoptn.gdl &
+    japvarx.gdl &
+    japamb.gdl &
+    japwind.gdl &
+    japstk.gdl &
+    japhis.gdl
+
+# systems where version resource must be added to .EXE
+version_res_exe_nt_386 = exever.res
+version_res_exe_nt_x64 = exever.res
+
+!include verrc.mif
+
+!ifndef __WATCOM_TOOLS__
+!ifeq host_os linux
+extra_ldflags = -ldl
+!endif
+!endif
+
+!ifeq sys_windowed 1
+resfile = $(name).res
+!else
+resfile = wresui.res
+!endif
+
+resfile_dll = wvuidll.res
+
+$(name).exe : $(extra_link_res_$(host_os)) litdef.gh $(objs) fingmsg.obj $(libs) $(resfile) $(version_res_exe_$(host_os)_$(host_cpu)) $(__MAKEFILES__)
+!ifndef __WATCOM_TOOLS__
+    $(cl) $(clflags) $(objs) fingmsg.obj $(libs) $(ldflags)
+!else
+    $(noecho)%create $^&.lnk
+!ifdef ovl_dos
+    @%append $^&.lnk option verbose,nocache
+!endif
+    @for %i in ($(libs))    do @%append $^&.lnk library %i
+    @for %i in ($(sysobjs)) do @%append $^&.lnk file %i
+    @%append $^&.lnk file fingmsg.obj
+!ifdef ovl_dos
+    @%append $^&.lnk begin autosection
+!endif
+    @for %i in ($(objs)) do @%append $^&.lnk file %i
+    @%make echo_link
+    $(linker) name $^@ $(lflags) @$^&.lnk $(endsect)
+!if 0
+!ifdef ovl_dos
+    copy $^&.map $(lnk2)
+    vi -d -q -s ..\mapfix.vi $(lnk2)
+    @%make echo_link
+    $(linker) name $^@ $(lflags) @$(lnk) @$(lnk2) $(endsect)
+!endif
+!endif
+!endif
+!ifeq sys_windowed 1
+    @%make bind_res_add_version_exe
+!else
+    @%make bind_res_version_exe
+    @%make bind_res_wresui
+!endif
+
+wd.lib : litdef.gh $(engine_objs) $(__MAKEFILES__)
+    @%make echo_lib
+!ifndef __WATCOM_TOOLS__
+    $(blib) $(bld_libflags) $(engine_objs)
+!else
+    $(librarian) $(libflags) $(engine_objs)
+!endif
+
+$(lnk) : $(__MAKEFILES__)
+
+rc_inc_dir_nt  = -I"$(rdir)/win"
+rc_inc_dir_os2 = -I"$(rdir)/os2"
+rc_inc_dir_win = -I"$(rdir)/win"
+
+rc_inc_dirs = -I. -Ih $(rc_inc_dir_$(host_os)) -I"$(rdir)" -I"$(rdir)/strings"
+rc_inc_dirs += -I"$(hdir)" $(aui_rc_inc_dirs) $(gui_inc_dirs) -I"$(dig_dir)/h"
+
+!ifeq sys_windowed 1
+
+bitmaps_os2 = &
+    $(rdir)/os2/zapant.ico &
+    $(rdir)/os2/8087.ico &
+    $(rdir)/os2/asm.ico &
+    $(rdir)/os2/brk.ico &
+    $(rdir)/os2/call.ico &
+    $(rdir)/os2/exe.ico &
+    $(rdir)/os2/func.ico &
+    $(rdir)/os2/glob.ico &
+    $(rdir)/os2/hot.ico &
+    $(rdir)/os2/io.ico &
+    $(rdir)/os2/log.ico &
+    $(rdir)/os2/mem.ico &
+    $(rdir)/os2/mod.ico &
+    $(rdir)/os2/reg.ico &
+    $(rdir)/os2/repl.ico &
+    $(rdir)/os2/src.ico &
+    $(rdir)/os2/srch.ico &
+    $(rdir)/os2/thrd.ico &
+    $(rdir)/os2/var.ico
+
+bitmaps_win = &
+    $(rdir)/win/zapant.ico &
+    $(rdir)/win/8087.ico &
+    $(rdir)/win/asm.ico &
+    $(rdir)/win/brk.ico &
+    $(rdir)/win/call.ico &
+    $(rdir)/win/exe.ico &
+    $(rdir)/win/func.ico &
+    $(rdir)/win/glob.ico &
+    $(rdir)/win/hot.ico &
+    $(rdir)/win/io.ico &
+    $(rdir)/win/log.ico &
+    $(rdir)/win/mem.ico &
+    $(rdir)/win/mod.ico &
+    $(rdir)/win/reg.ico &
+    $(rdir)/win/repl.ico &
+    $(rdir)/win/src.ico &
+    $(rdir)/win/srch.ico &
+    $(rdir)/win/thrd.ico &
+    $(rdir)/win/var.ico
+
+bitmaps_nt = $(bitmaps_win)
+
+bitmaps = &
+    $(bitmaps_$(host_os)) &
+    $(rdir)/splash.bmp &
+    $(rdir)/closebmp.bmp &
+    $(rdir)/read1.bmp &
+    $(rdir)/read2.bmp &
+    $(rdir)/write1.bmp &
+    $(rdir)/write2.bmp &
+    $(rdir)/open1.bmp &
+    $(rdir)/open2.bmp &
+    $(rdir)/close1.bmp &
+    $(rdir)/close2.bmp &
+    $(rdir)/points1.bmp &
+    $(rdir)/points2.bmp &
+    $(rdir)/codeher1.bmp &
+    $(rdir)/codeher2.bmp &
+    $(rdir)/brkhere1.bmp &
+    $(rdir)/brkhere2.bmp &
+    $(rdir)/dimbrk1.bmp &
+    $(rdir)/dimbrk2.bmp &
+    $(rdir)/source1.bmp &
+    $(rdir)/source2.bmp &
+    $(rdir)/source2.bmp &
+    $(rdir)/source1.bmp &
+    $(rdir)/assembl1.bmp &
+    $(rdir)/assembl2.bmp &
+    $(rdir)/assembl2.bmp &
+    $(rdir)/assembl1.bmp &
+    $(rdir)/currlin1.bmp &
+    $(rdir)/currlin2.bmp &
+    $(rdir)/unpoint1.bmp &
+    $(rdir)/unpoint2.bmp &
+    $(rdir)/currbrk1.bmp &
+    $(rdir)/currbrk2.bmp &
+    $(rdir)/currdim1.bmp &
+    $(rdir)/currdim2.bmp &
+    $(rdir)/go.bmp &
+    $(rdir)/over.bmp &
+    $(rdir)/into.bmp &
+    $(rdir)/return.bmp &
+    $(rdir)/back.bmp &
+    $(rdir)/for.bmp &
+    $(rdir)/up.bmp &
+    $(rdir)/down.bmp &
+    $(rdir)/home.bmp
+
+!endif
+
+!ifeq os2pm 1
+dlg_command  = parsedlg -font=10.Helv $[@ $@
+dlgj_command = parsedlg -font= $[@ $@
+!else
+dlg_command  = cp $[@ $@
+dlgj_command = cp $[@ $@
+!endif
+
+dlgayn.gdl : $(rdir)/dlgs/dlgayn.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgbrk.gdl : $(rdir)/dlgs/dlgbrk.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgcmd.gdl : $(rdir)/dlgs/dlgcmd.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlglist.gdl : $(rdir)/dlgs/dlglist.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgnewp.gdl : $(rdir)/dlgs/dlgnewp.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgoptn.gdl : $(rdir)/dlgs/dlgoptn.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgvarx.gdl : $(rdir)/dlgs/dlgvarx.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgamb.gdl : $(rdir)/dlgs/dlgamb.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgwind.gdl : $(rdir)/dlgs/dlgwind.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgstk.gdl : $(rdir)/dlgs/dlgstk.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlghis.gdl : $(rdir)/dlgs/dlghis.dlg $(__MAKEFILES__)
+    $(dlg_command)
+dlgasync.gdl : $(rdir)/dlgs/dlgasync.dlg $(__MAKEFILES__)
+    $(dlg_command)
+
+japayn.gdl : $(rdir)/dlgs/japayn.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japbrk.gdl : $(rdir)/dlgs/japbrk.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japcmd.gdl : $(rdir)/dlgs/japcmd.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japlist.gdl : $(rdir)/dlgs/japlist.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japnewp.gdl : $(rdir)/dlgs/japnewp.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japoptn.gdl : $(rdir)/dlgs/japoptn.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japvarx.gdl : $(rdir)/dlgs/japvarx.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japamb.gdl : $(rdir)/dlgs/japamb.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japwind.gdl : $(rdir)/dlgs/japwind.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japstk.gdl : $(rdir)/dlgs/japstk.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+japhis.gdl : $(rdir)/dlgs/japhis.dlg $(__MAKEFILES__)
+    $(dlgj_command)
+
+rcfiles = &
+    $(gui_dir)/h/gui.rc &
+    $(gui_dir)/h/gui.msg &
+    $(aui_dir)/res/aui.rc &
+    $(aui_dialogs) &
+    $(rdir)/dialogs.rc &
+    $(rdir)/strings.rc &
+    litdef.gh &
+    $(hdir)/dlgamb.h &
+    $(hdir)/dlgayn.h &
+    $(hdir)/dlgstk.h &
+    $(hdir)/dlgbrk.h &
+    $(hdir)/dlgcmd.h &
+    $(hdir)/dlglist.h &
+    $(hdir)/dlgnewp.h &
+    $(hdir)/dlgoptn.h &
+    $(hdir)/dlgvarx.h &
+    $(hdir)/dlgwind.h &
+    $(hdir)/dlgstk.h &
+    $(hdir)/dlgasync.h &
+    $(wv_dialogs)
+
+
+!ifeq host_os os2
+
+$(name).res : $(rdir)/wvpm.rc $(bitmaps) $(rcfiles) $(__MAKEFILES__) .autodepend
+    @%make echo_rc
+    $(rc) $(rc_flags) -ad $(rc_inc_path) $[@ -fo=$^@
+
+$(name)j.res : $(rdir)/wvpm.rc $(bitmaps) $(rcfiles) $(__MAKEFILES__) .autodepend
+    @%make echo_rc
+    $(rc) $(rc_flags) -ad -DJAPANESE $(rc_inc_path) $[@ -fo=$^@
+
+!else
+
+$(name).res : $(rdir)/wvwin.rc $(bitmaps) $(rcfiles) $(__MAKEFILES__) .autodepend
+    @%make echo_rc
+    $(rc) $(rc_flags) -ad $(rc_inc_path) $[@ -fo=$^@
+
+!endif
+
+$(resfile_dll) : $(rdir)/wvuidll.rc litdef.gh $(__MAKEFILES__) .autodepend
+    @%make echo_rc
+    $(rc) $(rc_flags) -ad $(rc_inc_path) $[@ -fo=$^@
+
+wresui.res : $(rdir)/wvui.rc $(rcfiles) usage.gh usagej.gh $(__MAKEFILES__) .autodepend
+    @%make echo_rc
+    $(rc_aui) -ad $(rc_inc_path) $[@ -fo=$^@
+
+####################
+.EXTENSIONS: .str
+
+.h: $(syshdir);$(hdir);$(aui_dir)/h
+
+.c: $(syscdir);$(cdir);$(aui_dir)/c;$(dig_srcs);$(trmem_dir)
+
+.asm: $(sysadir)
+
+.str: h;$(rdir)/strings
+
+litdefm.tmp : menu.str $(__MAKEFILES__)
+    @%make echo_cpp
+    $(cpp) $(rc_aui_flags) -o$@ $[@
+
+litdefs1.tmp : wdeng.str $(__MAKEFILES__)
+    @%make echo_cpp
+    $(cpp) $(rc_aui_flags) -I"$(dig_dir)/h" -o$@ $[@
+
+litdefs2.tmp : wddui.str $(__MAKEFILES__)
+    @%make echo_cpp
+    $(cpp) $(rc_aui_flags) -I"$(dig_dir)/h" -o$@ $[@
+
+litdef.gh : litdefs1.tmp litdefs2.tmp litdefm.tmp $(__MAKEFILES__)
+    @%create $^@
+    @%make echo_awk
+    $(awk) -v prefix=DBG_ENG_LITERAL_ -v base=DBG_ENG_BASE -f $(build_dir)/makemsg2.awk -v OUTFILE=$^. litdefs1.tmp
+    $(awk) -v prefix=DBG_DUI_LITERAL_ -v base=DBG_DUI_BASE -f $(build_dir)/makemsg2.awk -v OUTFILE=$^. litdefs2.tmp
+    $(awk) -v prefix=DBG_DUI_MENU_ -v base=DBG_MENU_BASE -f $(build_dir)/makemsg2.awk -v OUTFILE=$^. litdefm.tmp
+
+!ifeq release 0
+wsplice_keys = -kIS_RC -k$(host_os) -kHIDDEN
+!else
+wsplice_keys = -kIS_RC -k$(host_os)
+!endif
+
+usage.gh : $(hdir)/usage.sp $(__MAKEFILES__)
+    @%make echo_wsplice
+    $(wsplice) -kENGLISH $(wsplice_keys) -t8 -f "pick((MSG_USAGE_BASE+%$#%+), \"%s\", \"\")" $[@ $@
+
+usagej.gh : $(hdir)/usage.sp $(__MAKEFILES__)
+    @%make echo_wsplice
+    $(wsplice) -kJAPANESE $(wsplice_keys) -t8 -f "pick((MSG_USAGE_BASE+%$#%+), \"\", \"%s\")" $[@ $@
+
+usage.u : $(hdir)/usage.sp $(__MAKEFILES__)
+    @%make echo_wsplice
+    $(wsplice) -u -kENGLISH -k$(host_os) -klinkres $[@ $@
+
+bind_res_dll : .PROCEDURE .EXPLICIT
+!ifeq verbose 0
+    @echo bind res dll $@
+!endif
+    $(rc) -k $(resfile_dll) $^@

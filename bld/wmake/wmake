@@ -1,0 +1,48 @@
+link_sys_dos   = dos4g
+link_sys_os2   = os2v2
+
+!ifdef link_sys_$(bld_os)
+link_sys = $(link_sys_$(bld_os))
+!else
+link_sys = $(bld_os)
+!endif
+
+objs = &
+  macros.obj main.obj mautodep.obj mautoomf.obj mautoorl.obj &
+  mautores.obj memory.obj mexec.obj mglob.obj mhash.obj mlex.obj mlexmac.obj &
+  mlexprs.obj mparse.obj mpreproc.obj mrcmsg.obj msg.obj mstream.obj &
+  msuffix.obj msysdep.obj mtarget.obj mupdate.obj mvecstr.obj dostimet.obj &
+  mcache.obj misc.obj
+
+.c : ../c;$(builder_dir)/c;$(watcom_dir)/c
+
+!ifdef __UNIX__
+$(%OWBINDIR)/wmake : wmk.exe
+        cp wmk.exe $@
+!else
+$(%OWBINDIR)\wmake.exe : wmk.exe
+        copy wmk.exe $@
+!endif
+
+.c.obj : .AUTODEPEND
+        *wcc386 -zq -w8 -we -oaxt -j -fpc -zc -bt=$(bld_os) -DBOOTSTRAP -D_BLDVER=$(bld_ver_tool) -D_CYEAR=$(curr_year) -I. -I"../h" -I"../../watcom/h" -I"../../lib_misc/h" -fo=$@ $<
+
+./wsplice.exe : wsplice.obj
+        *wlink name $@ op q sys $(link_sys) file {$<}
+
+./cretype.exe : cretype.obj
+        *wlink name $@ op q sys $(link_sys) file {$<}
+
+# Use inline files for wsplice as a way to sidestep the metacharacter hell.
+usage.gh : ../h/usage.sp ./wsplice.exe
+        %write usage.tmp -kIS_RC -kENGLISH -f "{MSG_USAGE_BASE+%$#%+, \"%s\"}," $[@ $@
+        $]@ @usage.tmp
+
+isarray.gh : ./cretype.exe
+        $]@ > $@
+
+wmk.exe: usage.gh isarray.gh $(objs)
+        *wlink name $@ op q sys $(link_sys) file {$(objs)}
+
+clean:  .symbolic
+        rm -f *.obj *.gh *.exe *.err

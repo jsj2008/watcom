@@ -1,0 +1,23 @@
+#include <windows.h>
+#include "wr_rc.h"
+#include "selft.h"
+#include "selimage.h"
+#include "memflags.h"
+#include "editsym.h"
+#include "addsym.h"
+#include "wrmsg.h"
+
+STRINGTABLE
+BEGIN
+    #define pick(c,e,j) c, [ e ]
+
+    #include "wrmsg.gh"
+
+    #undef pick
+END
+
+#include "selft.dlg"
+#include "selimage.dlg"
+#include "memflags.dlg"
+#include "editsym.dlg"
+#include "addsym.dlg"

@@ -1,0 +1,17 @@
+#include "wreslang.h"
+#include "errnum.h"
+
+STRINGTABLE
+BEGIN
+    #define pick(c,e,j) (c + RLE_ENGLISH * MSG_LANG_SPACING), [ e ]
+
+    #include "wlibmsg.gh"
+
+    #undef pick
+
+    #define pick(c,e,j) (c + RLE_JAPANESE * MSG_LANG_SPACING), [ j ]
+
+    #include "wlibmsg.gh"
+
+    #undef pick
+END
